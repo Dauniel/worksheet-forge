@@ -1,0 +1,23 @@
+[project]
+name = "worksheet-forge"
+version = "0.1.0"
+description = "Seeded, symbolically-verified math worksheet generator"
+requires-python = ">=3.10"
+dependencies = [
+    "sympy>=1.12",
+    "Jinja2>=3.1",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["forge*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

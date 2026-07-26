@@ -1,0 +1,47 @@
+\documentclass[11pt]{article}
+\usepackage[letterpaper,margin=0.85in,top=1.05in,headheight=14pt]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{multicol}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small ((( header_left | tex )))}
+\fancyhead[R]{\small Name: \underline{\hspace{1.8in}}}
+\fancyfoot[C]{\small \thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setlist[enumerate]{itemsep=0pt, topsep=4pt, parsep=0pt, leftmargin=*}
+
+\begin{document}
+
+((* for section in sections *))
+\section*{((( section.name | tex )))}
+((* if section.directions *))
+\noindent\textit{((( section.directions | tex )))}
+((* endif *))
+\begin{enumerate}
+((* for p in section.problems *))
+  \item ((( p.question_latex )))
+  \vspace{((( section.workspace )))}
+((* endfor *))
+\end{enumerate}
+
+((* endfor *))
+((* if include_key *))
+\newpage
+\section*{Answer Key}
+((* for section in sections *))
+\subsection*{((( section.name | tex )))}
+\begin{multicols}{3}
+\begin{enumerate}
+((* for p in section.problems *))
+  \item ((( p.answer_latex )))
+((* endfor *))
+\end{enumerate}
+\end{multicols}
+((* endfor *))
+((* endif *))
+
+\end{document}

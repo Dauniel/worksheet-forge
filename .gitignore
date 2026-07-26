@@ -1,0 +1,22 @@
+# Build output -- worksheets are regenerated from specs + seeds.
+out/
+
+# Anti-repeat ledger is local run state, not shared history.
+history/used.json
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+
+# LaTeX intermediates
+*.aux
+*.log
+*.out
+*.failed.tex
+
+# macOS
+.DS_Store

@@ -1,0 +1,277 @@
+"""Topic catalog: turns a bare list of topics into a full worksheet spec.
+
+This is what makes ``forge quick negatives fractions slope`` work. Each entry
+supplies the section grouping, the directions, the work-space, and a default
+progression of subskills -- the editorial defaults a tutor would otherwise
+write out by hand in YAML.
+
+A topic emits *one section per group*, because directions are stated once per
+section and items are bare. Two subskills can only share a section if one set
+of directions honestly covers both: "Evaluate each expression" covers all four
+negatives subskills, but "solve the proportion" and "find the percent change"
+are different instructions and get their own parts.
+
+Nothing here selects *problems*; it only selects which generators run and how
+many times. Problem selection stays in seeded code.
+"""
+
+from __future__ import annotations
+
+from typing import Dict, List
+
+from .core.registry import all_generators
+
+
+def _s(subskill: str, difficulty: str, group: str = "", directions: str = "",
+       workspace: str = "", share: int = 1) -> dict:
+    return {
+        "subskill": subskill,
+        "difficulty": difficulty,
+        "share": share,
+        "group": group,
+        "directions": directions,
+        "workspace": workspace,
+    }
+
+
+CATALOG: Dict[str, dict] = {
+    "negatives": {
+        "name": "Negative Number Operations",
+        "directions": "Evaluate each expression completely.",
+        "workspace": "1.1cm",
+        "progression": [
+            _s("add_sub_integers", "easy"),
+            _s("mul_div_integers", "easy"),
+            _s("mixed_operations", "medium"),
+            _s("order_of_operations", "medium"),
+        ],
+    },
+    "fractions": {
+        "name": "Fractions",
+        "directions": "Evaluate. Write every answer in lowest terms.",
+        "workspace": "1.4cm",
+        "progression": [
+            _s("add_sub_fractions", "easy"),
+            _s("mul_div_fractions", "easy"),
+            _s("mixed_numbers", "medium"),
+            _s("simplify_fractions", "medium",
+               group="Writing Fractions in Lowest Terms",
+               directions="Write each fraction in lowest terms.",
+               workspace="1.1cm"),
+        ],
+    },
+    "like_terms": {
+        "name": "Simplifying Expressions",
+        "directions": "Simplify each expression.",
+        "workspace": "1.3cm",
+        "progression": [
+            _s("combine_like_terms", "easy"),
+            _s("distribute_and_combine", "medium"),
+        ],
+    },
+    "linear_equations": {
+        "name": "Solving Linear Equations",
+        "directions": "Solve each equation for $x$. Show your steps.",
+        "workspace": "2.0cm",
+        "progression": [
+            _s("one_step", "easy"),
+            _s("two_step", "easy"),
+            _s("with_distribution", "medium"),
+            _s("multi_step_both_sides", "medium"),
+        ],
+    },
+    "slope": {
+        "name": "Slope and Linear Graphs",
+        "directions": "Identify the slope $m$ and the $y$-intercept $b$ of each line.",
+        "workspace": "1.2cm",
+        "progression": [
+            _s("identify_slope_intercept", "easy"),
+            _s("slope_from_two_points", "easy",
+               group="Slope Through Two Points",
+               directions="Find the slope of the line through each pair of points.",
+               workspace="1.6cm"),
+            _s("equation_from_two_points", "medium",
+               group="Equations From Two Points",
+               directions=(
+                   "Write the equation of the line through each pair of points "
+                   "in slope-intercept form."
+               ),
+               workspace="2.0cm"),
+            _s("point_slope_to_equation", "medium",
+               group="Equations From a Slope and a Point",
+               directions=(
+                   "Write the equation of each line in slope-intercept form."
+               ),
+               workspace="2.0cm"),
+        ],
+    },
+    "ratios_percents": {
+        "name": "Proportions",
+        "directions": "Solve each proportion for $x$.",
+        "workspace": "1.5cm",
+        "progression": [
+            _s("proportions", "easy"),
+            _s("percent_of", "easy",
+               group="Percent of a Number",
+               directions="Find each value.",
+               workspace="1.3cm"),
+            _s("percent_change", "medium",
+               group="Percent Change",
+               directions=(
+                   "Find the percent change from the first value to the second. "
+                   "An increase is positive, a decrease is negative."
+               ),
+               workspace="1.6cm"),
+        ],
+    },
+    "exponents": {
+        "name": "Exponent Rules",
+        "directions": "Simplify. Write answers with positive exponents.",
+        "workspace": "1.3cm",
+        "progression": [
+            _s("product_rule", "easy"),
+            _s("quotient_rule", "easy"),
+            _s("power_rule", "medium"),
+            _s("negative_exponents", "medium"),
+            _s("zero_and_negative_powers", "medium"),
+        ],
+    },
+    "inequalities": {
+        "name": "Linear Inequalities",
+        "directions": "Solve each inequality for $x$.",
+        "workspace": "1.8cm",
+        "progression": [
+            _s("one_step", "easy"),
+            _s("two_step", "easy"),
+            _s("multi_step_both_sides", "medium"),
+        ],
+    },
+    "word_problems": {
+        "name": "Word Problems",
+        "directions": "Define a variable, write an equation, and solve.",
+        "workspace": "3.2cm",
+        "progression": [
+            _s("linear_model", "easy"),
+            _s("rate_model", "easy"),
+            _s("percent_model", "medium"),
+            _s("comparison_model", "medium"),
+        ],
+    },
+}
+
+PART_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+DEFAULT_COUNT = 8
+
+
+def known_topics() -> List[str]:
+    return list(CATALOG)
+
+
+def describe_topics() -> str:
+    """Human-readable topic listing for ``forge topics``."""
+    lines = []
+    registered = all_generators()
+    for topic, entry in CATALOG.items():
+        subs = [
+            e["subskill"] for e in entry["progression"]
+            if (topic, e["subskill"]) in registered
+        ]
+        lines.append(f"  {topic:<18} {entry['name']}")
+        lines.append(f"  {'':<18} subskills: {', '.join(subs)}")
+    return "\n".join(lines)
+
+
+def _apportion(total: int, shares: List[int]) -> List[int]:
+    """Split ``total`` across shares, distributing the remainder from the top."""
+    weight = sum(shares)
+    base = [total * s // weight for s in shares]
+    leftover = total - sum(base)
+    i = 0
+    while leftover > 0:
+        base[i % len(base)] += 1
+        leftover -= 1
+        i += 1
+    # A subskill allotted zero would silently vanish; give it at least one if
+    # there is room to take from the largest bucket.
+    for i, n in enumerate(base):
+        if n == 0 and max(base) > 1:
+            base[base.index(max(base))] -= 1
+            base[i] = 1
+    return base
+
+
+def parse_request(token: str) -> tuple:
+    """Parse ``negatives`` or ``negatives:12`` or ``negatives:12:hard``."""
+    parts = [p.strip() for p in str(token).split(":")]
+    topic = parts[0]
+    count = int(parts[1]) if len(parts) > 1 and parts[1] else DEFAULT_COUNT
+    difficulty = parts[2] if len(parts) > 2 and parts[2] else None
+    if topic not in CATALOG:
+        raise KeyError(
+            f"unknown topic {topic!r}. Known topics: {', '.join(known_topics())}"
+        )
+    if count < 1:
+        raise ValueError(f"{topic}: count must be at least 1")
+    if difficulty and difficulty not in ("easy", "medium", "hard"):
+        raise ValueError(f"{topic}: unknown difficulty {difficulty!r}")
+    return topic, count, difficulty
+
+
+def spec_from_topics(
+    tokens: List[str],
+    title: str = "",
+    header: str = "",
+    difficulty: str = "",
+) -> dict:
+    """Build a full spec dict from a list of topic tokens."""
+    if not tokens:
+        raise ValueError("no topics given")
+
+    sections = []
+    for token in tokens:
+        topic, count, topic_difficulty = parse_request(token)
+        entry = CATALOG[topic]
+        prog = entry["progression"]
+        counts = _apportion(count, [e["share"] for e in prog])
+
+        # One section per group; consecutive entries sharing a group merge.
+        groups: List[dict] = []
+        for e, n in zip(prog, counts):
+            if n == 0:
+                continue
+            name = e["group"] or entry["name"]
+            if not groups or groups[-1]["name"] != name:
+                groups.append(
+                    {
+                        "name": name,
+                        "directions": e["directions"] or entry["directions"],
+                        "workspace": e["workspace"] or entry["workspace"],
+                        "problems": [],
+                    }
+                )
+            groups[-1]["problems"].append(
+                {
+                    "topic": topic,
+                    "subskill": e["subskill"],
+                    "count": n,
+                    "difficulty": topic_difficulty or difficulty or e["difficulty"],
+                }
+            )
+        sections.extend(groups)
+
+    for i, sec in enumerate(sections):
+        sec["name"] = f"Part {PART_LETTERS[i % 26]}: {sec['name']}"
+
+    names = [CATALOG[parse_request(t)[0]]["name"] for t in tokens]
+    return {
+        "title": title or ", ".join(names),
+        "header": header or title or _short_header(names),
+        "sections": sections,
+    }
+
+
+def _short_header(names: List[str]) -> str:
+    joined = ", ".join(names)
+    if len(joined) <= 38:
+        return joined
+    return f"{names[0]} + {len(names) - 1} more"
