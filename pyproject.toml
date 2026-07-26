@@ -2,6 +2,10 @@
 name = "worksheet-forge"
 version = "0.1.0"
 description = "Seeded, symbolically-verified math worksheet generator"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Daniel Chang" }]
 requires-python = ">=3.10"
 dependencies = [
     "sympy>=1.12",

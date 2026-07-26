@@ -116,3 +116,7 @@ LaTeX coefficient bugs — `1x`, `-1x`, `0x`, `+ -`, float answers, unbalanced
 math mode.
 
 See `CLAUDE.md` for the conventions any future change must preserve.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
