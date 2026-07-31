@@ -65,13 +65,23 @@ def render_tex(
     env.filters["tex"] = tex_escape
     tmpl = env.get_template(template)
     # The header sits opposite the Name rule, so it must stay short enough to
-    # never wrap into it.
-    budget = 38 if include_key else 46
-    header = title if len(title) <= budget else title[: budget - 3].rstrip() + "..."
-    if include_key:
-        header += " --- Teacher Key"
+    # never wrap into it. The combined teacher-key PDF carries the problems and
+    # the key in one document, so it needs *two* running headers -- a plain
+    # student header for the problem pages, and a "--- Teacher Key" header that
+    # only takes effect once the key's \newpage is reached (see the template:
+    # \fancyhead[L] is redefined right at that boundary, never issued twice
+    # up front, so it cannot retroactively affect the earlier pages).
+    student_budget = 46
+    key_budget = 38
+
+    def _fit(budget: int) -> str:
+        return title if len(title) <= budget else title[: budget - 3].rstrip() + "..."
+
+    header_student = _fit(student_budget)
+    header_key = _fit(key_budget) + " --- Teacher Key"
     return tmpl.render(
-        header_left=header,
+        header_left=header_student,
+        header_left_key=header_key,
         sections=sections,
         include_key=include_key,
     )

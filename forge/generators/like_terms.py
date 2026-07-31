@@ -6,7 +6,9 @@ import random
 
 import sympy as sp
 
-from ..core.latexfmt import coeff, terms
+import math
+
+from ..core.latexfmt import coeff, linear, terms
 from ..core.problem import Problem
 from ..core.registry import register
 from ..core.sampling import nonzero_int, pick
@@ -60,3 +62,43 @@ def distribute_and_combine(rng: random.Random, difficulty: str) -> Problem:
     question = terms(lead, coeff(tail_c, "x"), str(tail_k))
     expr = k * (a * X + b) + tail_c * X + tail_k
     return _mk(question, expr, "distribute_and_combine", difficulty)
+
+
+@register("like_terms", "add_subtract_linear")
+def add_subtract_linear(rng: random.Random, difficulty: str) -> Problem:
+    """Add or subtract two parenthesized binomials, including the classic
+    ``(...) - (...)`` case where the second parenthesis' signs must flip."""
+    a1, b1, a2, b2 = (_c(rng, difficulty) for _ in range(4))
+    op = pick(rng, ("+", "-"))
+    left = linear(a1, b1, "x")
+    right = linear(a2, b2, "x")
+    question = f"({left}) {op} ({right})"
+    expr = (a1 * X + b1) + (a2 * X + b2) if op == "+" else (a1 * X + b1) - (a2 * X + b2)
+    return _mk(question, expr, "add_subtract_linear", difficulty)
+
+
+@register("like_terms", "factor_gcf")
+def factor_gcf(rng: random.Random, difficulty: str) -> Problem:
+    """Backwards construction: pick a coprime (a, b), then multiply by a GCF
+    g so the printed expression's true greatest common factor is exactly g."""
+    gcf_range = {"easy": (2, 6), "medium": (2, 9), "hard": (3, 12)}[difficulty]
+    while True:
+        a = nonzero_int(rng, -9, 9)
+        b = nonzero_int(rng, -9, 9)
+        if math.gcd(abs(a), abs(b)) == 1:
+            break
+    g = rng.randint(*gcf_range)
+    question = terms(coeff(g * a, "x"), str(g * b))
+    inner = terms(coeff(a, "x"), str(b))
+    prefix = coeff(g, "") or str(g)
+    answer = f"{prefix}({inner})"
+    expr = g * (a * X + b)  # unexpanded: the verifier expands both sides itself
+    return Problem(
+        question_latex=f"${question}$",
+        answer_latex=f"${answer}$",
+        answer_expr=expr,
+        topic="like_terms",
+        subskill="factor_gcf",
+        difficulty=difficulty,
+        verify={"kind": "simplify", "expr": question},
+    )

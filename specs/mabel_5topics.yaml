@@ -1,0 +1,115 @@
+title: Mabel's Worksheet
+header: Mabel's Worksheet
+sections:
+- name: 'Part A: Negative Number Operations'
+  directions: Evaluate each expression completely.
+  workspace: 1.1cm
+  problems:
+  - topic: negatives
+    subskill: add_sub_integers
+    count: 5
+    difficulty: easy
+  - topic: negatives
+    subskill: mul_div_integers
+    count: 5
+    difficulty: easy
+  - topic: negatives
+    subskill: mixed_operations
+    count: 5
+    difficulty: medium
+  - topic: negatives
+    subskill: order_of_operations
+    count: 5
+    difficulty: medium
+- name: 'Part B: Solving Linear Equations'
+  directions: Solve each equation for $x$. Show your steps.
+  workspace: 2.0cm
+  problems:
+  - topic: linear_equations
+    subskill: one_step
+    count: 5
+    difficulty: easy
+  - topic: linear_equations
+    subskill: two_step
+    count: 5
+    difficulty: easy
+  - topic: linear_equations
+    subskill: with_distribution
+    count: 5
+    difficulty: medium
+  - topic: linear_equations
+    subskill: multi_step_both_sides
+    count: 5
+    difficulty: medium
+- name: 'Part C: Linear Inequalities'
+  directions: Solve each inequality for $x$.
+  workspace: 1.8cm
+  problems:
+  - topic: inequalities
+    subskill: one_step
+    count: 7
+    difficulty: easy
+  - topic: inequalities
+    subskill: two_step
+    count: 7
+    difficulty: easy
+  - topic: inequalities
+    subskill: multi_step_both_sides
+    count: 6
+    difficulty: medium
+- name: 'Part D: Exponent Rules'
+  directions: Simplify. Write answers with positive exponents.
+  workspace: 1.3cm
+  problems:
+  - topic: exponents
+    subskill: product_rule
+    count: 4
+    difficulty: easy
+  - topic: exponents
+    subskill: quotient_rule
+    count: 4
+    difficulty: easy
+  - topic: exponents
+    subskill: power_rule
+    count: 4
+    difficulty: medium
+  - topic: exponents
+    subskill: negative_exponents
+    count: 4
+    difficulty: medium
+  - topic: exponents
+    subskill: zero_and_negative_powers
+    count: 4
+    difficulty: medium
+- name: 'Part E: Slope and Linear Graphs'
+  directions: Identify the slope $m$ and the $y$-intercept $b$ of each line.
+  workspace: 1.2cm
+  problems:
+  - topic: slope
+    subskill: identify_slope_intercept
+    count: 5
+    difficulty: easy
+- name: 'Part F: Slope Through Two Points'
+  directions: Find the slope of the line through each pair of points.
+  workspace: 1.6cm
+  problems:
+  - topic: slope
+    subskill: slope_from_two_points
+    count: 5
+    difficulty: easy
+- name: 'Part G: Equations From Two Points'
+  directions: Write the equation of the line through each pair of points in slope-intercept form.
+  workspace: 2.0cm
+  problems:
+  - topic: slope
+    subskill: equation_from_two_points
+    count: 5
+    difficulty: medium
+- name: 'Part H: Equations From a Slope and a Point'
+  directions: Write the equation of each line in slope-intercept form.
+  workspace: 2.0cm
+  problems:
+  - topic: slope
+    subskill: point_slope_to_equation
+    count: 5
+    difficulty: medium

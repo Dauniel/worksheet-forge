@@ -85,6 +85,10 @@ def latex_to_sympy(latex: str) -> sp.Expr:
     s = re.sub(r"\\[,;:!]", " ", s)
     s = _expand_fracs(s)
     s = s.replace("^", "**")
+    # nth roots: \sqrt[3]{x} -> real_root(x, 3), so negative radicands (cube
+    # roots) evaluate to the real root, not sympy's principal complex root.
+    # Must run before the plain \sqrt rule.
+    s = re.sub(r"\\sqrt\[(\d+)\]\{([^{}]*)\}", r"real_root((\2),\1)", s)
     s = re.sub(r"\\sqrt\s*\{([^{}]*)\}", r"sqrt(\1)", s)
     s = s.replace(r"\%", "").replace("%", "")
     s = s.replace("{", "(").replace("}", ")")
@@ -318,6 +322,157 @@ def _v_word(p: Problem) -> None:
             )
 
 
+# Matches a bare "$5$", a dollar amount "$\$5$", or a percent "$5\%$" --
+# always the integer between the outer math delimiters, in reading order.
+_NUM = re.compile(r"\$\\?\$?(-?\d+)\\?%?\$")
+
+
+def _nums(text: str) -> List[sp.Integer]:
+    """Pull every printed integer out of a prose question, in reading order."""
+    return [sp.Integer(x) for x in _NUM.findall(text)]
+
+
+def _v_geo_rectangle_area(p: Problem) -> None:
+    l, w = _nums(p.question_latex)
+    if not _equal(l * w, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: area should be {l * w}")
+
+
+def _v_geo_square_area(p: Problem) -> None:
+    (s,) = _nums(p.question_latex)
+    if not _equal(s * s, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: area should be {s * s}")
+
+
+def _v_geo_triangle_area(p: Problem) -> None:
+    b, h = _nums(p.question_latex)
+    expected = sp.Rational(b * h, 2)
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: area should be {expected}")
+
+
+def _v_geo_trapezoid_area(p: Problem) -> None:
+    b1, b2, h = _nums(p.question_latex)
+    expected = sp.Rational((b1 + b2) * h, 2)
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: area should be {expected}")
+
+
+def _v_geo_rect_prism_volume(p: Problem) -> None:
+    l, w, h = _nums(p.question_latex)
+    expected = l * w * h
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: volume should be {expected}")
+
+
+def _v_geo_rect_prism_sa(p: Problem) -> None:
+    l, w, h = _nums(p.question_latex)
+    expected = 2 * (l * w + l * h + w * h)
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: surface area should be {expected}")
+
+
+def _v_geo_tri_prism_volume(p: Problem) -> None:
+    a, b, c, length = _nums(p.question_latex)
+    expected = sp.Rational(a * b, 2) * length
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: volume should be {expected}")
+
+
+def _v_geo_tri_prism_sa(p: Problem) -> None:
+    a, b, c, length = _nums(p.question_latex)
+    expected = a * b + (a + b + c) * length
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: surface area should be {expected}")
+
+
+def _classify_value(value) -> set:
+    labels: set = set()
+    if bool(value.is_rational):
+        labels.add("rational")
+        if bool(value.is_integer):
+            labels.add("integer")
+            if value >= 0:
+                labels.add("whole")
+    else:
+        labels.add("irrational")
+    return labels
+
+
+def _v_classify(p: Problem) -> None:
+    value = latex_to_sympy(p.question_latex)
+    got = _classify_value(value)
+    expected = set(p.answer_expr)
+    if got != expected:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} classifies as {got}, "
+            f"key says {expected}"
+        )
+
+
+def _v_estimate_percent(p: Problem) -> None:
+    # order in the prose: actual_pct, actual_whole, friendly_pct, friendly_whole
+    _, _, fpct, fwhole = _nums(p.question_latex)
+    expected = sp.Rational(fpct, 100) * fwhole
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: estimate should be {expected}")
+
+
+def _v_markup_discount(p: Problem) -> None:
+    original, pct = _nums(p.question_latex)
+    sign = -1 if "discount" in p.question_latex.lower() or "off" in p.question_latex.lower() \
+        or "sale" in p.question_latex.lower() or "clearance" in p.question_latex.lower() else 1
+    expected = original + sign * sp.Rational(pct, 100) * original
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: new price should be {expected}")
+
+
+def _v_percent_error(p: Problem) -> None:
+    actual, measured = _nums(p.question_latex)
+    if actual == 0:
+        raise VerificationError(f"{p.topic}/{p.subskill}: percent error from zero actual value")
+    expected = sp.Abs(measured - actual) / actual * 100
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: percent error should be {expected}")
+
+
+def _v_commission(p: Problem) -> None:
+    pct, sales = _nums(p.question_latex)
+    expected = sp.Rational(pct, 100) * sales
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: commission should be {expected}")
+
+
+def _v_tax_tip(p: Problem) -> None:
+    amount, pct = _nums(p.question_latex)
+    expected = amount + sp.Rational(pct, 100) * amount
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: total should be {expected}")
+
+
+def _v_unit_rate(p: Problem) -> None:
+    total, quantity = _nums(p.question_latex)
+    if quantity == 0:
+        raise VerificationError(f"{p.topic}/{p.subskill}: divide by zero quantity")
+    expected = sp.Rational(total, quantity)
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: unit rate should be {expected}")
+
+
+def _v_unit_price_comparison(p: Problem) -> None:
+    price_a, qty_a, price_b, qty_b = _nums(p.question_latex)
+    if qty_a == 0 or qty_b == 0:
+        raise VerificationError(f"{p.topic}/{p.subskill}: divide by zero quantity")
+    rate_a, rate_b = sp.Rational(price_a, qty_a), sp.Rational(price_b, qty_b)
+    if rate_a == rate_b:
+        raise VerificationError(f"{p.topic}/{p.subskill}: tied unit prices, no unique better buy")
+    expected = "A" if rate_a < rate_b else "B"
+    if str(p.answer_expr).strip().upper().replace("OPTION ", "") != expected:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: better buy is Option {expected}, key says {p.answer_expr}"
+        )
+
+
 STRATEGIES = {
     "evaluate": _v_evaluate,
     "simplify": _v_simplify,
@@ -331,6 +486,22 @@ STRATEGIES = {
     "percent_of": _v_percent_of,
     "percent_change": _v_percent_change,
     "word": _v_word,
+    "geo_rectangle_area": _v_geo_rectangle_area,
+    "geo_square_area": _v_geo_square_area,
+    "geo_triangle_area": _v_geo_triangle_area,
+    "geo_trapezoid_area": _v_geo_trapezoid_area,
+    "geo_rect_prism_volume": _v_geo_rect_prism_volume,
+    "geo_rect_prism_sa": _v_geo_rect_prism_sa,
+    "geo_tri_prism_volume": _v_geo_tri_prism_volume,
+    "geo_tri_prism_sa": _v_geo_tri_prism_sa,
+    "classify": _v_classify,
+    "estimate_percent": _v_estimate_percent,
+    "markup_discount": _v_markup_discount,
+    "percent_error": _v_percent_error,
+    "commission": _v_commission,
+    "tax_tip": _v_tax_tip,
+    "unit_rate": _v_unit_rate,
+    "unit_price_comparison": _v_unit_price_comparison,
 }
 
 

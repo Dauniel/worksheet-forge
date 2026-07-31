@@ -84,6 +84,66 @@ def negative_exponents(rng: random.Random, difficulty: str) -> Problem:
     return _mk(question, value, "negative_exponents", difficulty, "evaluate")
 
 
+@register("exponents", "combined_rules")
+def combined_rules(rng: random.Random, difficulty: str) -> Problem:
+    """Multi-variable expressions that stack several exponent rules at once:
+
+    a nested power times a monomial, a quotient of two-variable monomials, a
+    negative-exponent factor that must clean up positive, or a nested power
+    of a quotient. Always resolves to a positive-exponent monomial.
+    """
+    lo, hi = EXP_RANGE[difficulty]
+    Y = sp.Symbol("y")
+    style = rng.randrange(4)
+
+    if style == 0:
+        ca = rng.randint(*COEF_RANGE[difficulty])
+        a, b = rng.randint(lo, hi), rng.randint(1, hi)
+        n = rng.randint(2, 3)
+        cb = rng.randint(*COEF_RANGE[difficulty])
+        c, d = rng.randint(lo, hi), rng.randint(1, hi)
+        lead_a = "" if ca == 1 else str(ca)
+        lead_b = "" if cb == 1 else str(cb)
+        question = (
+            rf"({lead_a}x^{{{a}}}y^{{{b}}})^{{{n}}} \cdot {lead_b}x^{{{c}}}y^{{{d}}}"
+        )
+        value = (ca**n) * cb * X ** (a * n + c) * Y ** (b * n + d)
+    elif style == 1:
+        ca = rng.randint(2, max(2, COEF_RANGE[difficulty][1]))
+        divisors = [i for i in range(1, ca + 1) if ca % i == 0]
+        cb = pick(rng, divisors)
+        a = rng.randint(lo + 2, hi + 2)
+        c = rng.randint(lo, a - 1)
+        b = rng.randint(lo + 2, hi + 2)
+        d = rng.randint(lo, b - 1)
+        lead_a = "" if ca == 1 else str(ca)
+        lead_b = "" if cb == 1 else str(cb)
+        question = (
+            rf"\dfrac{{{lead_a}x^{{{a}}}y^{{{b}}}}}{{{lead_b}x^{{{c}}}y^{{{d}}}}}"
+        )
+        value = sp.Rational(ca, cb) * X ** (a - c) * Y ** (b - d)
+    elif style == 2:
+        ca = rng.randint(2, 6)
+        a = rng.randint(1, 3)
+        n = rng.randint(2, 3)
+        m = a * n + rng.randint(0, hi)
+        question = rf"({ca}x^{{-{a}}})^{{{n}}} \cdot x^{{{m}}}"
+        value = sp.Integer(ca**n) * X ** (m - a * n)
+    else:
+        ca = rng.randint(2, 6)
+        divisors = [i for i in range(1, ca + 1) if ca % i == 0]
+        cb = pick(rng, divisors)
+        a = rng.randint(lo + 1, hi + 1)
+        c = rng.randint(lo, a - 1)
+        n = rng.randint(2, 3)
+        lead_a = "" if ca == 1 else str(ca)
+        lead_b = "" if cb == 1 else str(cb)
+        question = rf"\left(\dfrac{{{lead_a}x^{{{a}}}}}{{{lead_b}x^{{{c}}}}}\right)^{{{n}}}"
+        value = sp.Rational(ca, cb) ** n * X ** ((a - c) * n)
+
+    return _mk(question, value, "combined_rules", difficulty)
+
+
 @register("exponents", "zero_and_negative_powers")
 def zero_and_negative_powers(rng: random.Random, difficulty: str) -> Problem:
     """Mixed product of powers of the same base, including zero exponents."""

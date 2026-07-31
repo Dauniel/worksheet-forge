@@ -4,6 +4,7 @@
 \usepackage{enumitem}
 \usepackage{fancyhdr}
 \usepackage{multicol}
+\usepackage{tikz}
 
 \pagestyle{fancy}
 \fancyhf{}
@@ -31,6 +32,7 @@
 ((* endfor *))
 ((* if include_key *))
 \newpage
+\fancyhead[L]{\small ((( header_left_key | tex )))}
 \section*{Answer Key}
 ((* for section in sections *))
 \subsection*{((( section.name | tex )))}

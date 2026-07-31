@@ -11,7 +11,7 @@ from fractions import Fraction
 
 import sympy as sp
 
-from ..core.latexfmt import coeff, linear, num, terms
+from ..core.latexfmt import coeff, dnum, linear, num, terms
 from ..core.problem import Problem
 from ..core.registry import register
 from ..core.sampling import nonzero_int, pick
@@ -76,6 +76,96 @@ def multi_step_both_sides(rng: random.Random, difficulty: str) -> Problem:
     return _mk(
         linear(m1, b1), linear(m2, b2), x_sol, "multi_step_both_sides", difficulty
     )
+
+
+@register("linear_equations", "fractional")
+def fractional(rng: random.Random, difficulty: str) -> Problem:
+    """Equations with a fractional coefficient or a variable over a denominator.
+
+    Three shapes, drawn backwards from ``x_sol`` like every other generator
+    here: ``(a/n)x + b = c``, ``x/d + b = c``, and a two-step form that needs
+    the denominator cleared, ``(x + a)/d + b = c``.
+    """
+    lo, hi = RANGES[difficulty]
+    x_sol = _solution(rng, difficulty)
+    style = rng.randrange(3)
+
+    if style == 0:
+        n = pick(rng, NICE_DENOMS)
+        m = Fraction(nonzero_int(rng, -min(hi, 9), min(hi, 9)), n)
+        b = nonzero_int(rng, -hi, hi)
+        lhs = linear(m, b, display=True)
+        rhs = dnum(m * x_sol + b)
+    elif style == 1:
+        d = pick(rng, NICE_DENOMS)
+        b = nonzero_int(rng, -hi, hi)
+        lhs = terms(rf"\dfrac{{x}}{{{d}}}", num(b))
+        rhs = dnum(x_sol / d + b)
+    else:
+        a = nonzero_int(rng, -hi, hi)
+        d = pick(rng, NICE_DENOMS)
+        b = nonzero_int(rng, -hi, hi)
+        inner = linear(1, a)
+        lhs = terms(rf"\dfrac{{{inner}}}{{{d}}}", num(b))
+        rhs = dnum((x_sol + a) / d + b)
+
+    return _mk(lhs, rhs, x_sol, "fractional", difficulty)
+
+
+@register("linear_equations", "proportion")
+def proportion(rng: random.Random, difficulty: str) -> Problem:
+    """Fraction-equals-fraction equations solved by cross-multiplying.
+
+    Every numerator/constant is built backwards from an integer ``x_sol`` so
+    both sides land on exact, integer-coefficient terms -- only the
+    denominators carry the fraction, which is what makes cross-multiplying
+    the natural move.
+    """
+    lo, hi = RANGES[difficulty]
+    x_sol = Fraction(nonzero_int(rng, -hi, hi))
+    style = rng.randrange(3)
+
+    if style == 0:
+        # (a*x + b)/d = p/q, where p/q is n/d scaled up so it isn't already
+        # in lowest terms matching the left denominator.
+        a = nonzero_int(rng, 1, min(hi, 9))
+        d = pick(rng, NICE_DENOMS)
+        n = nonzero_int(rng, -hi, hi)  # numerator of the left side
+        b = n - a * x_sol
+        s = pick(rng, (1, 2, 3))
+        p, q = n * s, d * s
+        lhs = rf"\dfrac{{{linear(a, b, display=True)}}}{{{d}}}"
+        rhs = rf"\dfrac{{{p}}}{{{q}}}"
+    elif style == 1:
+        # p / x = a / q  (x sits in a denominator)
+        q = pick(rng, (2, 3, 4, 5, 6))
+        a = nonzero_int(rng, 1, min(hi, 9))
+        p = nonzero_int(rng, -min(hi, 9), min(hi, 9))
+        x_sol = Fraction(p * q, a)
+        lhs = rf"\dfrac{{{p}}}{{x}}"
+        rhs = rf"\dfrac{{{a}}}{{{q}}}"
+    else:
+        # (a1*x + b1)/d1 = (a2*x + b2)/d2, with d2 a small integer multiple
+        # of d1 (or vice versa) so the matching numerators stay exact ints.
+        d_base = pick(rng, NICE_DENOMS)
+        k = pick(rng, (2, 3))
+        n_base = nonzero_int(rng, -hi, hi)
+        n_other = n_base * k
+        d_other = d_base * k
+        if rng.random() < 0.5:
+            d1, n1, d2, n2 = d_base, n_base, d_other, n_other
+        else:
+            d1, n1, d2, n2 = d_other, n_other, d_base, n_base
+        a1 = nonzero_int(rng, 1, min(hi, 9))
+        a2 = nonzero_int(rng, 1, min(hi, 9))
+        while a1 * d2 == a2 * d1:  # equal slopes -> identity, not one solution
+            a2 = nonzero_int(rng, 1, min(hi, 9))
+        b1 = n1 - a1 * x_sol
+        b2 = n2 - a2 * x_sol
+        lhs = rf"\dfrac{{{linear(a1, b1, display=True)}}}{{{d1}}}"
+        rhs = rf"\dfrac{{{linear(a2, b2, display=True)}}}{{{d2}}}"
+
+    return _mk(lhs, rhs, x_sol, "proportion", difficulty)
 
 
 @register("linear_equations", "with_distribution")
