@@ -22,12 +22,18 @@
 ((* if section.directions *))
 \noindent\textit{((( section.directions | tex )))}
 ((* endif *))
+((* if section.columns and section.columns > 1 *))
+\begin{multicols}{((( section.columns )))}
+((* endif *))
 \begin{enumerate}
 ((* for p in section.problems *))
   \item ((( p.question_latex )))
   \vspace{((( section.workspace )))}
 ((* endfor *))
 \end{enumerate}
+((* if section.columns and section.columns > 1 *))
+\end{multicols}
+((* endif *))
 
 ((* endfor *))
 ((* if include_key *))

@@ -45,6 +45,7 @@ def _sample_problems():
             "name": f"Geometry: {subskill.replace('_', ' ')}",
             "directions": "Find the requested measurement.",
             "workspace": "1.6cm",
+            "columns": 1,
             "problems": items,
         })
         all_problems.extend(items)

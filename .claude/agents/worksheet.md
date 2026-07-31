@@ -71,7 +71,11 @@ Work from the repository root (where `pyproject.toml` and `forge/` live).
    section's directions, a section whose directions don't describe its items,
    cramped or wasted work space, a header colliding with the Name rule, and
    for any topic with a TikZ figure, a diagram whose drawn proportions are
-   illegible or whose labels don't match a sane reading of the shape.
+   illegible or whose labels don't match a sane reading of the shape. For a
+   two-column section (see below), also confirm the columns actually balance
+   and the numbering reads 1..N down the left column then continuing down the
+   right -- LaTeX's `multicols` + `enumerate` does this correctly on its own,
+   but a build is not proven right until you've looked at it.
 
    If pdftotext/pdfinfo are available, it's also worth spot-checking the
    *combined* key PDF's running header per page (problems pages must never
@@ -109,6 +113,50 @@ Work from the repository root (where `pyproject.toml` and `forge/` live).
 6. **Deliver the filed PDF** -- the copy at its final path, not the one in
    `out/` -- and state both the filed path and the seed so the worksheet can
    be found and rebuilt.
+
+## Per-section columns
+
+Every section in a spec accepts an optional `columns:` integer (default `1`).
+`columns: 2` wraps that section's problem list in `\begin{multicols}{2}`, so
+short items are numbered 1-10 down the left column and 11-20 down the right
+instead of running one-per-line down the full page width. Numbering stays
+sequential and continuous across the break, and the two columns balance --
+that's plain LaTeX `multicols` + `enumerate` behavior, not something forge has
+to manage. The answer key is unaffected either way: it is always rendered in
+its own fixed `multicols{3}`, regardless of what a section's `columns:` says
+for the problem pages.
+
+**The test is width, not topic.** Ask: does the longest item in this section
+fit comfortably in half the text width? If yes, two columns roughly doubles
+how much fits on a page. If no -- because the item is a sentence, a wide
+`\dfrac` stack, or (always) a figure -- force it to one column; a cramped
+wrap mid-expression or mid-sentence is worse than a longer worksheet.
+
+The catalog (`forge/catalog.py`) already sets a sensible default per
+subskill, so most requests need nothing extra:
+
+- **Two columns by default:** order of operations and other `negatives`
+  subskills, fractions, exponent rules, roots, classifying a number,
+  combining/distributing/adding-subtracting/factoring short linear
+  expressions, one-/two-/multi-step equations and inequalities (including
+  variables on both sides), slope/point problems, and the purely symbolic
+  proportion and percent-of/percent-change items in `ratios_percents` and
+  `percent_apps.percent_proportion`.
+- **One column by default:** every `word_problems` subskill, `unit_rates`
+  (both the single unit-rate sentence and the two-option comparison), the
+  sentence-framed `percent_apps` subskills (`estimate_percent`,
+  `markup_discount`, `percent_error`, `commission`, `tax_tip`), and **every
+  `geometry` subskill**, because they all render a TikZ figure that needs the
+  full text width.
+
+If you hand-write a spec and are unsure, default to `1` -- that's also what
+happens if you omit the key entirely. Do not set `columns: 2` on a section
+containing a figure: `forge/build.py` detects a TikZ picture in any item's
+rendered LaTeX and forces the section back to 1 column with a warning rather
+than honoring the request, but it's better to just not ask for it. If a new
+generator produces unusually wide symbolic output (e.g. a triple-decker
+`\dfrac`), default its catalog entry to `columns: 1` rather than relying on
+that guard to save you -- the guard only catches figures, not wide text.
 
 ## Judgment calls
 

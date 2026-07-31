@@ -1,9 +1,9 @@
 """Topic catalog: turns a bare list of topics into a full worksheet spec.
 
 This is what makes ``forge quick negatives fractions slope`` work. Each entry
-supplies the section grouping, the directions, the work-space, and a default
-progression of subskills -- the editorial defaults a tutor would otherwise
-write out by hand in YAML.
+supplies the section grouping, the directions, the work-space, the column
+count, and a default progression of subskills -- the editorial defaults a
+tutor would otherwise write out by hand in YAML.
 
 A topic emits *one section per group*, because directions are stated once per
 section and items are bare. Two subskills can only share a section if one set
@@ -13,6 +13,18 @@ are different instructions and get their own parts.
 
 Nothing here selects *problems*; it only selects which generators run and how
 many times. Problem selection stays in seeded code.
+
+## Column defaults
+
+Two columns is a layout choice, not a topic label -- the test is whether the
+longest item in a section fits comfortably in half the text width. Short,
+purely symbolic items (order of operations, one-line equations/inequalities,
+exponent rules, roots, classifying a single number, combining/factoring a
+short expression) default to two columns; anything with real prose (word
+problems, percent applications framed as a sentence, unit-rate comparisons)
+or a TikZ figure (every geometry subskill) stays single-column. See
+``forge/build.py`` for the runtime guard that forces a figure-bearing section
+back to one column even if a hand-written spec asks for more.
 """
 
 from __future__ import annotations
@@ -23,7 +35,7 @@ from .core.registry import all_generators
 
 
 def _s(subskill: str, difficulty: str, group: str = "", directions: str = "",
-       workspace: str = "", share: int = 1) -> dict:
+       workspace: str = "", share: int = 1, columns: int = 0) -> dict:
     return {
         "subskill": subskill,
         "difficulty": difficulty,
@@ -31,6 +43,7 @@ def _s(subskill: str, difficulty: str, group: str = "", directions: str = "",
         "group": group,
         "directions": directions,
         "workspace": workspace,
+        "columns": columns,
     }
 
 
@@ -40,10 +53,10 @@ CATALOG: Dict[str, dict] = {
         "directions": "Evaluate each expression completely.",
         "workspace": "1.1cm",
         "progression": [
-            _s("add_sub_integers", "easy"),
-            _s("mul_div_integers", "easy"),
-            _s("mixed_operations", "medium"),
-            _s("order_of_operations", "medium"),
+            _s("add_sub_integers", "easy", columns=2),
+            _s("mul_div_integers", "easy", columns=2),
+            _s("mixed_operations", "medium", columns=2),
+            _s("order_of_operations", "medium", columns=2),
         ],
     },
     "fractions": {
@@ -51,13 +64,13 @@ CATALOG: Dict[str, dict] = {
         "directions": "Evaluate. Write every answer in lowest terms.",
         "workspace": "1.4cm",
         "progression": [
-            _s("add_sub_fractions", "easy"),
-            _s("mul_div_fractions", "easy"),
-            _s("mixed_numbers", "medium"),
+            _s("add_sub_fractions", "easy", columns=2),
+            _s("mul_div_fractions", "easy", columns=2),
+            _s("mixed_numbers", "medium", columns=2),
             _s("simplify_fractions", "medium",
                group="Writing Fractions in Lowest Terms",
                directions="Write each fraction in lowest terms.",
-               workspace="1.1cm"),
+               workspace="1.1cm", columns=2),
         ],
     },
     "like_terms": {
@@ -65,16 +78,16 @@ CATALOG: Dict[str, dict] = {
         "directions": "Simplify each expression.",
         "workspace": "1.3cm",
         "progression": [
-            _s("combine_like_terms", "easy"),
-            _s("distribute_and_combine", "medium"),
+            _s("combine_like_terms", "easy", columns=2),
+            _s("distribute_and_combine", "medium", columns=2),
             _s("add_subtract_linear", "medium",
                group="Adding and Subtracting Linear Expressions",
                directions="Add or subtract, then simplify.",
-               workspace="1.4cm"),
+               workspace="1.4cm", columns=2),
             _s("factor_gcf", "medium",
                group="Factoring Linear Expressions",
                directions="Factor out the greatest common factor.",
-               workspace="1.3cm"),
+               workspace="1.3cm", columns=2),
         ],
     },
     "linear_equations": {
@@ -82,10 +95,10 @@ CATALOG: Dict[str, dict] = {
         "directions": "Solve each equation for $x$. Show your steps.",
         "workspace": "2.0cm",
         "progression": [
-            _s("one_step", "easy"),
-            _s("two_step", "easy"),
-            _s("with_distribution", "medium"),
-            _s("multi_step_both_sides", "medium"),
+            _s("one_step", "easy", columns=2),
+            _s("two_step", "easy", columns=2),
+            _s("with_distribution", "medium", columns=2),
+            _s("multi_step_both_sides", "medium", columns=2),
         ],
     },
     "slope": {
@@ -93,24 +106,24 @@ CATALOG: Dict[str, dict] = {
         "directions": "Identify the slope $m$ and the $y$-intercept $b$ of each line.",
         "workspace": "1.2cm",
         "progression": [
-            _s("identify_slope_intercept", "easy"),
+            _s("identify_slope_intercept", "easy", columns=2),
             _s("slope_from_two_points", "easy",
                group="Slope Through Two Points",
                directions="Find the slope of the line through each pair of points.",
-               workspace="1.6cm"),
+               workspace="1.6cm", columns=2),
             _s("equation_from_two_points", "medium",
                group="Equations From Two Points",
                directions=(
                    "Write the equation of the line through each pair of points "
                    "in slope-intercept form."
                ),
-               workspace="2.0cm"),
+               workspace="2.0cm", columns=2),
             _s("point_slope_to_equation", "medium",
                group="Equations From a Slope and a Point",
                directions=(
                    "Write the equation of each line in slope-intercept form."
                ),
-               workspace="2.0cm"),
+               workspace="2.0cm", columns=2),
         ],
     },
     "ratios_percents": {
@@ -118,18 +131,18 @@ CATALOG: Dict[str, dict] = {
         "directions": "Solve each proportion for $x$.",
         "workspace": "1.5cm",
         "progression": [
-            _s("proportions", "easy"),
+            _s("proportions", "easy", columns=2),
             _s("percent_of", "easy",
                group="Percent of a Number",
                directions="Find each value.",
-               workspace="1.3cm"),
+               workspace="1.3cm", columns=2),
             _s("percent_change", "medium",
                group="Percent Change",
                directions=(
                    "Find the percent change from the first value to the second. "
                    "An increase is positive, a decrease is negative."
                ),
-               workspace="1.6cm"),
+               workspace="1.6cm", columns=2),
         ],
     },
     "exponents": {
@@ -137,11 +150,11 @@ CATALOG: Dict[str, dict] = {
         "directions": "Simplify. Write answers with positive exponents.",
         "workspace": "1.3cm",
         "progression": [
-            _s("product_rule", "easy"),
-            _s("quotient_rule", "easy"),
-            _s("power_rule", "medium"),
-            _s("negative_exponents", "medium"),
-            _s("zero_and_negative_powers", "medium"),
+            _s("product_rule", "easy", columns=2),
+            _s("quotient_rule", "easy", columns=2),
+            _s("power_rule", "medium", columns=2),
+            _s("negative_exponents", "medium", columns=2),
+            _s("zero_and_negative_powers", "medium", columns=2),
         ],
     },
     "inequalities": {
@@ -149,9 +162,9 @@ CATALOG: Dict[str, dict] = {
         "directions": "Solve each inequality for $x$.",
         "workspace": "1.8cm",
         "progression": [
-            _s("one_step", "easy"),
-            _s("two_step", "easy"),
-            _s("multi_step_both_sides", "medium"),
+            _s("one_step", "easy", columns=2),
+            _s("two_step", "easy", columns=2),
+            _s("multi_step_both_sides", "medium", columns=2),
         ],
     },
     "word_problems": {
@@ -159,10 +172,10 @@ CATALOG: Dict[str, dict] = {
         "directions": "Define a variable, write an equation, and solve.",
         "workspace": "3.2cm",
         "progression": [
-            _s("linear_model", "easy"),
-            _s("rate_model", "easy"),
-            _s("percent_model", "medium"),
-            _s("comparison_model", "medium"),
+            _s("linear_model", "easy", columns=1),
+            _s("rate_model", "easy", columns=1),
+            _s("percent_model", "medium", columns=1),
+            _s("comparison_model", "medium", columns=1),
         ],
     },
     "number_sense": {
@@ -173,7 +186,7 @@ CATALOG: Dict[str, dict] = {
         ),
         "workspace": "1.3cm",
         "progression": [
-            _s("classify", "easy"),
+            _s("classify", "easy", columns=2),
         ],
     },
     "roots": {
@@ -181,12 +194,12 @@ CATALOG: Dict[str, dict] = {
         "directions": "Evaluate each root.",
         "workspace": "1.2cm",
         "progression": [
-            _s("square_root", "easy"),
-            _s("cube_root", "easy"),
+            _s("square_root", "easy", columns=2),
+            _s("cube_root", "easy", columns=2),
             _s("simplify_radical", "medium",
                group="Simplifying Radicals",
                directions="Simplify each radical completely.",
-               workspace="1.3cm"),
+               workspace="1.3cm", columns=2),
         ],
     },
     "geometry": {
@@ -194,26 +207,29 @@ CATALOG: Dict[str, dict] = {
         "directions": "Find the area of each figure.",
         "workspace": "1.6cm",
         "progression": [
-            _s("area_rectangle", "easy"),
-            _s("area_square", "easy"),
-            _s("area_triangle", "easy"),
-            _s("area_trapezoid", "medium"),
+            # Every geometry subskill renders a TikZ figure that needs the
+            # full text width -- always 1 column. forge/build.py also
+            # enforces this at runtime regardless of what a spec requests.
+            _s("area_rectangle", "easy", columns=1),
+            _s("area_square", "easy", columns=1),
+            _s("area_triangle", "easy", columns=1),
+            _s("area_trapezoid", "medium", columns=1),
             _s("volume_rect_prism", "medium",
                group="Volume of Prisms",
                directions="Find the volume of each prism.",
-               workspace="1.8cm"),
+               workspace="1.8cm", columns=1),
             _s("volume_tri_prism", "medium",
                group="Volume of Prisms",
                directions="Find the volume of each prism.",
-               workspace="1.8cm"),
+               workspace="1.8cm", columns=1),
             _s("surface_area_rect_prism", "hard",
                group="Surface Area of Prisms",
                directions="Find the surface area of each prism.",
-               workspace="1.8cm"),
+               workspace="1.8cm", columns=1),
             _s("surface_area_tri_prism", "hard",
                group="Surface Area of Prisms",
                directions="Find the surface area of each prism.",
-               workspace="1.8cm"),
+               workspace="1.8cm", columns=1),
         ],
     },
     "percent_apps": {
@@ -221,27 +237,29 @@ CATALOG: Dict[str, dict] = {
         "directions": "Solve the percent proportion for $x$.",
         "workspace": "1.5cm",
         "progression": [
-            _s("percent_proportion", "easy"),
+            # Symbolic, same shape as ratios_percents.proportions -- fits two columns.
+            _s("percent_proportion", "easy", columns=2),
+            # Everything below is a full sentence -- needs the full width.
             _s("estimate_percent", "easy",
                group="Estimating Percents",
                directions="Estimate using the friendly benchmark given.",
-               workspace="1.4cm"),
+               workspace="1.4cm", columns=1),
             _s("markup_discount", "medium",
                group="Markup and Discount",
                directions="Find the new price.",
-               workspace="2.0cm"),
+               workspace="2.0cm", columns=1),
             _s("percent_error", "medium",
                group="Percent Error",
                directions="Find the percent error.",
-               workspace="2.0cm"),
+               workspace="2.0cm", columns=1),
             _s("commission", "medium",
                group="Commission",
                directions="Find the commission earned.",
-               workspace="2.0cm"),
+               workspace="2.0cm", columns=1),
             _s("tax_tip", "medium",
                group="Tax and Tip",
                directions="Find the total, including tax or tip.",
-               workspace="2.0cm"),
+               workspace="2.0cm", columns=1),
         ],
     },
     "unit_rates": {
@@ -249,11 +267,11 @@ CATALOG: Dict[str, dict] = {
         "directions": "Find the unit rate.",
         "workspace": "1.8cm",
         "progression": [
-            _s("unit_rate", "easy"),
+            _s("unit_rate", "easy", columns=1),
             _s("unit_price_comparison", "medium",
                group="Unit Price Comparison",
                directions="Determine which option is the better price per unit.",
-               workspace="2.0cm"),
+               workspace="2.0cm", columns=1),
         ],
     },
 }
@@ -345,6 +363,7 @@ def spec_from_topics(
                         "name": name,
                         "directions": e["directions"] or entry["directions"],
                         "workspace": e["workspace"] or entry["workspace"],
+                        "columns": e["columns"] or 1,
                         "problems": [],
                     }
                 )

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
@@ -15,6 +16,12 @@ from .core.sampling import Ledger, NullLedger, draw
 from .core.verify import verify_all
 
 DEFAULT_WORKSPACE = "1.1cm"
+DEFAULT_COLUMNS = 1
+
+
+def _contains_figure(problems: List[Problem]) -> bool:
+    """A TikZ figure needs the full text width; it can never share a column."""
+    return any("tikzpicture" in p.question_latex for p in problems)
 
 
 @dataclass
@@ -59,11 +66,22 @@ def generate(spec: dict, seed: int, ledger: Optional[Ledger] = None) -> BuiltWor
                     seen=seen,
                 )
             )
+        columns = int(sec.get("columns", DEFAULT_COLUMNS) or DEFAULT_COLUMNS)
+        if columns > 1 and _contains_figure(items):
+            warnings.warn(
+                f"section {sec['name']!r} requested {columns} columns but "
+                "contains a TikZ figure, which needs the full text width; "
+                "forcing 1 column.",
+                stacklevel=2,
+            )
+            columns = 1
+
         sections.append(
             {
                 "name": sec["name"],
                 "directions": sec.get("directions", ""),
                 "workspace": sec.get("workspace", DEFAULT_WORKSPACE),
+                "columns": columns,
                 "problems": items,
             }
         )
