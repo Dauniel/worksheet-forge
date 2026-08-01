@@ -7,10 +7,12 @@ from fractions import Fraction
 
 import sympy as sp
 
-from ..core.latexfmt import coeff, linear, num, terms
+from ..core.latexfmt import coeff, dnum, linear, num, terms
 from ..core.problem import Problem
 from ..core.registry import register
-from ..core.sampling import nonzero_int
+from ..core.sampling import nonzero_int, pick
+
+NICE_DENOMS = (2, 3, 4)
 
 X = sp.Symbol("x")
 RANGES = {"easy": (1, 9), "medium": (2, 12), "hard": (2, 15)}
@@ -93,3 +95,42 @@ def multi_step_both_sides(rng: random.Random, difficulty: str) -> Problem:
     b1 = nonzero_int(rng, -hi, hi)
     b2 = (m1 - m2) * x_bound + b1
     return _mk(linear(m1, b1), rel, linear(m2, b2), "multi_step_both_sides", difficulty)
+
+
+@register("inequalities", "fractional")
+def fractional(rng: random.Random, difficulty: str) -> Problem:
+    """Inequalities with a fractional coefficient or a variable over a denominator.
+
+    Same three shapes as ``linear_equations.fractional`` -- ``(a/n)x + b REL c``,
+    ``x/d + b REL c``, and ``(x + a)/d + b REL c`` -- drawn backwards from an
+    integer boundary ``x_bound`` so the answer stays clean even though the
+    problem itself carries a fraction. ``_describe`` (shared with every other
+    subskill here) already handles the sign-flip correctly for a negative
+    fractional coefficient, since it reasons about the coefficient's sign,
+    not its denominator.
+    """
+    lo, hi = RANGES[difficulty]
+    rel = rng.choice(list(RELS))
+    x_bound = nonzero_int(rng, -hi, hi)
+    style = rng.randrange(3)
+
+    if style == 0:
+        n = pick(rng, NICE_DENOMS)
+        m = Fraction(nonzero_int(rng, -min(hi, 9), min(hi, 9)), n)
+        b = nonzero_int(rng, -hi, hi)
+        lhs = linear(m, b, display=True)
+        rhs = dnum(m * x_bound + b)
+    elif style == 1:
+        d = pick(rng, NICE_DENOMS)
+        b = nonzero_int(rng, -hi, hi)
+        lhs = terms(rf"\dfrac{{x}}{{{d}}}", num(b))
+        rhs = dnum(Fraction(x_bound, d) + b)
+    else:
+        a = nonzero_int(rng, -hi, hi)
+        d = pick(rng, NICE_DENOMS)
+        b = nonzero_int(rng, -hi, hi)
+        inner = linear(1, a)
+        lhs = terms(rf"\dfrac{{{inner}}}{{{d}}}", num(b))
+        rhs = dnum(Fraction(x_bound + a, d) + b)
+
+    return _mk(lhs, rel, rhs, "fractional", difficulty)

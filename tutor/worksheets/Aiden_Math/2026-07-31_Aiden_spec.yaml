@@ -1,0 +1,176 @@
+title: Aiden - Math Review
+header: Aiden - Math Review
+sections:
+- name: 'Part A: Negative Number Operations (Complex)'
+  directions: Evaluate each expression completely.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: negatives
+    subskill: mixed_operations
+    count: 8
+    difficulty: hard
+  - topic: negatives
+    subskill: order_of_operations
+    count: 8
+    difficulty: hard
+- name: 'Part B: Fractions'
+  directions: Evaluate. Write every answer in lowest terms.
+  workspace: 1.4cm
+  columns: 2
+  problems:
+  - topic: fractions
+    subskill: add_sub_fractions
+    count: 4
+    difficulty: medium
+  - topic: fractions
+    subskill: mul_div_fractions
+    count: 4
+    difficulty: medium
+  - topic: fractions
+    subskill: mixed_numbers
+    count: 4
+    difficulty: medium
+  - topic: fractions
+    subskill: simplify_fractions
+    count: 4
+    difficulty: medium
+- name: 'Part C: Exponent Properties'
+  directions: Simplify. Write answers with positive exponents.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: exponents
+    subskill: product_rule
+    count: 3
+    difficulty: easy
+  - topic: exponents
+    subskill: quotient_rule
+    count: 3
+    difficulty: easy
+  - topic: exponents
+    subskill: power_rule
+    count: 3
+    difficulty: medium
+  - topic: exponents
+    subskill: negative_exponents
+    count: 2
+    difficulty: medium
+  - topic: exponents
+    subskill: zero_and_negative_powers
+    count: 2
+    difficulty: medium
+  - topic: exponents
+    subskill: combined_rules
+    count: 3
+    difficulty: hard
+- name: 'Part D: Simplifying and Factoring Expressions'
+  directions: Simplify each expression completely.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: like_terms
+    subskill: combine_like_terms
+    count: 4
+    difficulty: medium
+  - topic: like_terms
+    subskill: distribute_and_combine
+    count: 4
+    difficulty: medium
+  - topic: like_terms
+    subskill: add_subtract_linear
+    count: 4
+    difficulty: medium
+  - topic: like_terms
+    subskill: factor_gcf
+    count: 4
+    difficulty: medium
+- name: 'Part E: Solving for x'
+  directions: Solve each equation for $x$. Show your steps.
+  workspace: 2.0cm
+  columns: 2
+  problems:
+  - topic: linear_equations
+    subskill: one_step
+    count: 3
+    difficulty: easy
+  - topic: linear_equations
+    subskill: two_step
+    count: 3
+    difficulty: easy
+  - topic: linear_equations
+    subskill: with_distribution
+    count: 3
+    difficulty: medium
+  - topic: linear_equations
+    subskill: multi_step_both_sides
+    count: 3
+    difficulty: medium
+  - topic: linear_equations
+    subskill: fractional
+    count: 2
+    difficulty: hard
+  - topic: linear_equations
+    subskill: proportion
+    count: 2
+    difficulty: hard
+- name: 'Part F: Solving Inequalities'
+  directions: Solve each inequality for $x$.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - topic: inequalities
+    subskill: one_step
+    count: 4
+    difficulty: easy
+  - topic: inequalities
+    subskill: two_step
+    count: 4
+    difficulty: medium
+  - topic: inequalities
+    subskill: multi_step_both_sides
+    count: 4
+    difficulty: medium
+  - topic: inequalities
+    subskill: fractional
+    count: 4
+    difficulty: hard
+- name: 'Part G: Solving Absolute Value Equations'
+  directions: Solve each equation for $x$.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - topic: absolute_value
+    subskill: solve_basic
+    count: 4
+    difficulty: medium
+  - topic: absolute_value
+    subskill: solve_with_coefficient
+    count: 4
+    difficulty: hard
+  - topic: absolute_value
+    subskill: multi_step
+    count: 4
+    difficulty: hard
+- name: 'Part H: Proportions'
+  directions: Solve each proportion for $x$.
+  workspace: 1.5cm
+  columns: 2
+  problems:
+  - topic: ratios_percents
+    subskill: proportions
+    count: 6
+    difficulty: medium
+- name: 'Part I: Unit Rate and Price Comparison'
+  directions: Find the unit rate, or determine which option is the better price per unit.
+  workspace: 2.0cm
+  columns: 1
+  problems:
+  - topic: unit_rates
+    subskill: unit_rate
+    count: 5
+    difficulty: medium
+  - topic: unit_rates
+    subskill: unit_price_comparison
+    count: 5
+    difficulty: medium

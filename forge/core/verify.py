@@ -82,6 +82,9 @@ def latex_to_sympy(latex: str) -> sp.Expr:
     s = latex.strip().strip("$").strip()
     s = s.replace(r"\left", "").replace(r"\right", "")
     s = s.replace(r"\cdot", "*").replace(r"\times", "*").replace(r"\div", "/")
+    # Absolute value bars: |...| -> Abs(...). Our renderers never nest bars,
+    # so a left-to-right non-greedy pairing is unambiguous.
+    s = re.sub(r"\|([^|]+)\|", r"Abs(\1)", s)
     s = re.sub(r"\\[,;:!]", " ", s)
     s = _expand_fracs(s)
     s = s.replace("^", "**")
@@ -157,6 +160,26 @@ def _v_solve(p: Problem) -> None:
         raise VerificationError(
             f"{p.topic}/{p.subskill}: {p.question_latex} solves to {sols[0]}, "
             f"key says {p.answer_expr}"
+        )
+
+
+def _v_abs_solve(p: Problem) -> None:
+    """Re-solve the printed |...| = c equation; require exactly the keyed roots."""
+    # sympy's Abs-equation solver refuses a symbol with no real/imaginary
+    # assumption ("argument is not real or imaginary") -- these are always
+    # real-valued algebra problems, so declare it.
+    name = p.verify.get("var", "x")
+    var = sp.Symbol(name, real=True)
+    # latex_to_sympy parses with a plain (no-assumptions) symbol of the same
+    # name; swap it for the real one so sp.solve sees `var` as the unknown.
+    lhs = latex_to_sympy(p.verify["lhs"]).subs(sp.Symbol(name), var)
+    rhs = latex_to_sympy(p.verify["rhs"])
+    sols = sorted(sp.solve(sp.Eq(lhs, rhs), var), key=lambda s: sp.N(s))
+    expected = list(p.answer_expr)
+    if len(sols) != len(expected) or not all(_equal(a, b) for a, b in zip(sols, expected)):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} solves to {sols}, "
+            f"key says {expected}"
         )
 
 
@@ -478,6 +501,7 @@ STRATEGIES = {
     "simplify": _v_simplify,
     "solve": _v_solve,
     "inequality": _v_inequality,
+    "abs_solve": _v_abs_solve,
     "tuple": _v_tuple,
     "slope_from_points": _v_slope_from_points,
     "line_through_points": _v_line_through_points,

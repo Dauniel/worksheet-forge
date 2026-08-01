@@ -179,6 +179,7 @@ CATALOG: Dict[str, dict] = {
             _s("one_step", "easy", columns=2),
             _s("two_step", "easy", columns=2),
             _s("multi_step_both_sides", "medium", columns=2),
+            _s("fractional", "hard", columns=2),
         ],
     },
     "word_problems": {
@@ -274,6 +275,20 @@ CATALOG: Dict[str, dict] = {
                group="Tax and Tip",
                directions="Find the total, including tax or tip.",
                workspace="2.0cm", columns=1),
+        ],
+    },
+    "absolute_value": {
+        "name": "Absolute Value",
+        "directions": "Solve each equation for $x$.",
+        "workspace": "1.8cm",
+        "progression": [
+            _s("evaluate", "easy",
+               group="Evaluating Absolute Value Expressions",
+               directions="Evaluate each expression completely.",
+               workspace="1.2cm", columns=2),
+            _s("solve_basic", "medium", columns=2),
+            _s("solve_with_coefficient", "hard", columns=2),
+            _s("multi_step", "hard", columns=2),
         ],
     },
     "unit_rates": {
