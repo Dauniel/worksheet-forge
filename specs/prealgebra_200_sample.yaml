@@ -1,0 +1,250 @@
+title: Pre-Algebra Practice (200 Questions)
+header: Pre-Algebra Practice
+sections:
+- name: 'Part A: Order of Operations'
+  directions: Evaluate each expression completely.
+  workspace: 1.4cm
+  columns: 2
+  problems:
+  - topic: negatives
+    subskill: order_of_operations
+    count: 16
+    difficulty: medium
+- name: 'Part B: Fractions'
+  directions: Evaluate. Write every answer in lowest terms.
+  workspace: 1.4cm
+  columns: 2
+  problems:
+  - topic: fractions
+    subskill: add_sub_fractions
+    count: 4
+    difficulty: medium
+  - topic: fractions
+    subskill: mul_div_fractions
+    count: 4
+    difficulty: medium
+  - topic: fractions
+    subskill: mixed_numbers
+    count: 4
+    difficulty: medium
+- name: 'Part C: Proportions'
+  directions: Solve each proportion for $x$.
+  workspace: 1.6cm
+  columns: 2
+  problems:
+  - topic: ratios_percents
+    subskill: proportions
+    count: 8
+    difficulty: medium
+- name: 'Part D: Unit Rates'
+  directions: Find the unit rate, or determine the better price per unit.
+  workspace: 1.8cm
+  columns: 1
+  problems:
+  - topic: unit_rates
+    subskill: unit_rate
+    count: 4
+    difficulty: medium
+  - topic: unit_rates
+    subskill: unit_price_comparison
+    count: 4
+    difficulty: medium
+- name: 'Part E: Classifying Numbers'
+  directions: Classify each number using all that apply - rational, irrational,
+    whole, integer.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: number_sense
+    subskill: classify
+    count: 12
+    difficulty: medium
+- name: 'Part F: Exponent Rules'
+  directions: Simplify. Write answers with positive exponents.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: exponents
+    subskill: product_rule
+    count: 4
+    difficulty: medium
+  - topic: exponents
+    subskill: power_rule
+    count: 4
+    difficulty: medium
+  - topic: exponents
+    subskill: negative_exponents
+    count: 4
+    difficulty: medium
+- name: 'Part G: Roots'
+  directions: Evaluate or simplify each root.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: roots
+    subskill: square_root
+    count: 4
+    difficulty: medium
+  - topic: roots
+    subskill: cube_root
+    count: 4
+    difficulty: medium
+  - topic: roots
+    subskill: simplify_radical
+    count: 4
+    difficulty: medium
+- name: 'Part H: Percent Proportion'
+  directions: Solve the percent proportion, or find each value.
+  workspace: 1.6cm
+  columns: 2
+  problems:
+  - topic: percent_apps
+    subskill: percent_proportion
+    count: 4
+    difficulty: medium
+  - topic: ratios_percents
+    subskill: percent_of
+    count: 4
+    difficulty: medium
+- name: 'Part I: Estimating Percents'
+  directions: Estimate using the friendly benchmark given.
+  workspace: 1.4cm
+  columns: 1
+  problems:
+  - topic: percent_apps
+    subskill: estimate_percent
+    count: 4
+    difficulty: medium
+- name: 'Part J: Percent Change'
+  directions: Find the percent change from the first value to the second. An increase
+    is positive, a decrease is negative.
+  workspace: 1.6cm
+  columns: 2
+  problems:
+  - topic: ratios_percents
+    subskill: percent_change
+    count: 4
+    difficulty: medium
+- name: 'Part K: Percent Applications'
+  directions: Solve each percent application problem.
+  workspace: 2.0cm
+  columns: 1
+  problems:
+  - topic: percent_apps
+    subskill: markup_discount
+    count: 4
+    difficulty: medium
+  - topic: percent_apps
+    subskill: percent_error
+    count: 4
+    difficulty: medium
+  - topic: percent_apps
+    subskill: commission
+    count: 4
+    difficulty: medium
+  - topic: percent_apps
+    subskill: tax_tip
+    count: 4
+    difficulty: medium
+- name: 'Part L: Linear Expressions'
+  directions: Simplify, combine, or factor each expression.
+  workspace: 1.4cm
+  columns: 2
+  problems:
+  - topic: like_terms
+    subskill: combine_like_terms
+    count: 4
+    difficulty: medium
+  - topic: like_terms
+    subskill: distribute_and_combine
+    count: 4
+    difficulty: medium
+  - topic: like_terms
+    subskill: add_subtract_linear
+    count: 4
+    difficulty: medium
+  - topic: like_terms
+    subskill: factor_gcf
+    count: 4
+    difficulty: medium
+- name: 'Part M: Solving Equations'
+  directions: Solve each equation for $x$. Show your steps.
+  workspace: 2.0cm
+  columns: 2
+  problems:
+  - topic: linear_equations
+    subskill: two_step
+    count: 6
+    difficulty: easy
+  - topic: linear_equations
+    subskill: with_distribution
+    count: 6
+    difficulty: medium
+  - topic: linear_equations
+    subskill: multi_step_both_sides
+    count: 6
+    difficulty: medium
+  - topic: linear_equations
+    subskill: fractional
+    count: 6
+    difficulty: hard
+- name: 'Part N: Solving Inequalities'
+  directions: Solve each inequality for $x$.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - topic: inequalities
+    subskill: two_step
+    count: 8
+    difficulty: easy
+  - topic: inequalities
+    subskill: multi_step_both_sides
+    count: 8
+    difficulty: medium
+- name: 'Part O: Area'
+  directions: Find the area of each figure.
+  workspace: 1.6cm
+  columns: 1
+  problems:
+  - topic: geometry
+    subskill: area_rectangle
+    count: 4
+    difficulty: medium
+  - topic: geometry
+    subskill: area_square
+    count: 4
+    difficulty: medium
+  - topic: geometry
+    subskill: area_triangle
+    count: 4
+    difficulty: medium
+  - topic: geometry
+    subskill: area_trapezoid
+    count: 4
+    difficulty: medium
+- name: 'Part P: Volume of Prisms'
+  directions: Find the volume of each prism.
+  workspace: 1.8cm
+  columns: 1
+  problems:
+  - topic: geometry
+    subskill: volume_rect_prism
+    count: 4
+    difficulty: medium
+  - topic: geometry
+    subskill: volume_tri_prism
+    count: 4
+    difficulty: medium
+- name: 'Part Q: Surface Area of Prisms'
+  directions: Find the surface area of each prism.
+  workspace: 1.8cm
+  columns: 1
+  problems:
+  - topic: geometry
+    subskill: surface_area_rect_prism
+    count: 4
+    difficulty: hard
+  - topic: geometry
+    subskill: surface_area_tri_prism
+    count: 4
+    difficulty: hard
