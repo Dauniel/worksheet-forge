@@ -1,0 +1,17 @@
+Justin:
+  Mar 3   8:00 - 9:30 PM
+  Mar 4   9:30 - 10:30 PM
+  Mar 5   7:30 - 9:30 PM
+  Mar 16  9:00 - 11:00 PM
+  Mar 17  9:20 - 11:20 PM
+  Apr 14  7:00 - 8:00 PM
+  Apr 22  8:15 - 9:15 PM
+  Apr 23  6:30 - 7:30 PM
+  Apr 27  8:45 - 9:45 PM
+  Apr 28  8:00 - 9:00 PM
+  Apr 29  8:15 - 9:15 PM
+  May 1   5:30 - 7:30 PM
+
+April: 6 hrs x $35 = $210
+May:   2 hrs x $35 = $70
+Total: $280

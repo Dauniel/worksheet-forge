@@ -1,0 +1,91 @@
+title: Rachel - Homework
+header: Rachel - Homework
+sections:
+- name: 'Part A: Negative Number Operations'
+  directions: Evaluate each expression completely.
+  workspace: 1.1cm
+  problems:
+  - topic: negatives
+    subskill: add_sub_integers
+    count: 7
+    difficulty: easy
+  - topic: negatives
+    subskill: mul_div_integers
+    count: 7
+    difficulty: easy
+  - topic: negatives
+    subskill: mixed_operations
+    count: 6
+    difficulty: medium
+  - topic: negatives
+    subskill: order_of_operations
+    count: 5
+    difficulty: medium
+- name: 'Part B: Solving Linear Equations'
+  directions: Solve each equation for $x$. Show your steps.
+  workspace: 2.0cm
+  problems:
+  - topic: linear_equations
+    subskill: one_step
+    count: 4
+    difficulty: easy
+  - topic: linear_equations
+    subskill: two_step
+    count: 4
+    difficulty: easy
+  - topic: linear_equations
+    subskill: with_distribution
+    count: 4
+    difficulty: medium
+  - topic: linear_equations
+    subskill: multi_step_both_sides
+    count: 4
+    difficulty: medium
+  - topic: linear_equations
+    subskill: fractional
+    count: 5
+    difficulty: medium
+  - topic: linear_equations
+    subskill: proportion
+    count: 4
+    difficulty: medium
+- name: 'Part C: Exponent Rules'
+  directions: Simplify. Write answers with positive exponents.
+  workspace: 1.3cm
+  problems:
+  - topic: exponents
+    subskill: product_rule
+    count: 4
+    difficulty: hard
+  - topic: exponents
+    subskill: quotient_rule
+    count: 4
+    difficulty: hard
+  - topic: exponents
+    subskill: power_rule
+    count: 4
+    difficulty: hard
+  - topic: exponents
+    subskill: negative_exponents
+    count: 4
+    difficulty: hard
+  - topic: exponents
+    subskill: zero_and_negative_powers
+    count: 4
+    difficulty: hard
+  - topic: exponents
+    subskill: combined_rules
+    count: 5
+    difficulty: hard
+- name: 'Part D: Sale Price and Tax'
+  directions: Solve each word problem. Show your work.
+  workspace: 2.0cm
+  problems:
+  - topic: percent_apps
+    subskill: markup_discount
+    count: 13
+    difficulty: medium
+  - topic: percent_apps
+    subskill: tax_tip
+    count: 12
+    difficulty: medium
