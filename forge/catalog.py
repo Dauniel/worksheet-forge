@@ -99,6 +99,15 @@ CATALOG: Dict[str, dict] = {
             _s("two_step", "easy", columns=2),
             _s("with_distribution", "medium", columns=2),
             _s("multi_step_both_sides", "medium", columns=2),
+            # Fractional coefficients / variable-over-a-denominator forms and
+            # cross-multiplying proportions are the two hardest equation
+            # shapes here -- same "solve for x" directions as the rest, so
+            # they stay in the same section rather than getting their own.
+            # Their \dfrac stacks are only ever a single numerator/denominator
+            # deep (never a fraction of a fraction), so they read fine at
+            # half the text width -- checked visually before setting this.
+            _s("fractional", "hard", columns=2),
+            _s("proportion", "hard", columns=2),
         ],
     },
     "slope": {
@@ -155,6 +164,11 @@ CATALOG: Dict[str, dict] = {
             _s("power_rule", "medium", columns=2),
             _s("negative_exponents", "medium", columns=2),
             _s("zero_and_negative_powers", "medium", columns=2),
+            # Stacks several rules at once (nested powers, two-variable
+            # quotients) -- the hardest tier here. Still a single line, no
+            # taller than power_rule's own parenthesized-power items, so it
+            # reads fine at half width; checked visually before setting this.
+            _s("combined_rules", "hard", columns=2),
         ],
     },
     "inequalities": {
