@@ -24,6 +24,15 @@ is still caught.
 squarefree radicand b and a coefficient a (a >= 2) with the product a^2*b
 capped at 225, producing sqrt(a^2*b) -> a*sqrt(b). No sign, no fraction, no
 leading coefficient beyond the structural `a` -- positive-only throughout.
+
+``simplify_cube_radical`` is the cube-root analogue of ``simplify_radical``:
+it draws a cube-free radicand b and a coefficient a (a >= 2), caps the
+product a^3*b (not the factors independently, per tier -- see
+`PRODUCT_CAP_CUBE`), and produces cbrt(a^3*b) -> a*cbrt(b). Cube-free means no
+prime divides b three or more times, so b may still be divisible by a square
+(cbrt(4) and cbrt(9) are already fully simplified) -- that is what keeps the
+radicand space wide enough to clear the ordinary 60%-distinct variance floor
+at every tier with no `SMALL_REACHABLE_SPACE` exemption.
 """
 
 from __future__ import annotations
@@ -57,6 +66,17 @@ PRODUCT_CAP = 225
 SQUAREFREE_MAX = {"easy": 30, "medium": 45, "hard": 56}
 COEF_TIER_MAX = {"easy": 8, "medium": 10, "hard": 11}
 
+# cbrt(a^3 * b) -> a*cbrt(b): the PRODUCT a^3*b is capped, not the factors
+# independently -- the radicand b is drawn no larger than cap//8 so that the
+# smallest legal coefficient (a = 2) already fits under the cap, and a's upper
+# bound is then derived from whichever b came out. The cap therefore holds for
+# every (a, b) pair the generator can produce; it is never clamped past.
+# Radicands stay in the low hundreds so the prime factorization is work a
+# student can do by hand.
+PRODUCT_CAP_CUBE = {"easy": 400, "medium": 550, "hard": 700}
+CUBEFREE_MAX = {"easy": 80, "medium": 120, "hard": 180}
+COEF_TIER_MAX_CUBE = {"easy": 7, "medium": 9, "hard": 11}
+
 
 def _is_squarefree(n: int) -> bool:
     i = 2
@@ -76,10 +96,50 @@ def _squarefree(rng: random.Random, hi: int) -> int:
             return n
 
 
-def _mk(question: str, value, subskill: str, difficulty: str) -> Problem:
+def _is_cubefree(n: int) -> bool:
+    """No prime divides ``n`` three or more times.
+
+    Weaker than :func:`_is_squarefree` on purpose -- 4, 9, 12 and 50 are all
+    legal cube-radicands (``cbrt(4)`` cannot be simplified further), and
+    excluding them would throw away most of the sample space.
+    """
+    i = 2
+    while i * i <= n:
+        count = 0
+        while n % i == 0:
+            n //= i
+            count += 1
+            if count >= 3:
+                return False
+        i += 1
+    return True
+
+
+def _cubefree(rng: random.Random, hi: int) -> int:
+    while True:
+        n = rng.randint(2, hi)
+        if _is_cubefree(n):
+            return n
+
+
+def _icbrt(n: int) -> int:
+    """Integer cube root: largest r with r**3 <= n (n >= 0)."""
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    r = round(n ** (1 / 3))
+    while r ** 3 > n:
+        r -= 1
+    while (r + 1) ** 3 <= n:
+        r += 1
+    return r
+
+
+def _mk(question: str, value, subskill: str, difficulty: str,
+        answer_latex: str | None = None) -> Problem:
+    """``answer_latex`` overrides sp.latex when it would leave radical form."""
     return Problem(
         question_latex=f"${question}$",
-        answer_latex=f"${sp.latex(value)}$",
+        answer_latex=f"${answer_latex if answer_latex is not None else sp.latex(value)}$",
         answer_expr=value,
         topic="roots",
         subskill=subskill,
@@ -114,3 +174,25 @@ def simplify_radical(rng: random.Random, difficulty: str) -> Problem:
     question = rf"\sqrt{{{k}}}"
     value = a * sp.sqrt(b)
     return _mk(question, value, "simplify_radical", difficulty)
+
+
+@register("roots", "simplify_cube_radical")
+def simplify_cube_radical(rng: random.Random, difficulty: str) -> Problem:
+    cap = PRODUCT_CAP_CUBE[difficulty]
+    # cap // 8 keeps a = 2 (the smallest legal coefficient) inside the cap for
+    # every b that can be drawn, so a_max is never clamped up past it.
+    # b is drawn first on purpose: bounding b by cap // a^3 instead spreads the
+    # coefficient evenly but starves b's range, dropping the generator under
+    # the variance floor in tests/test_variance.py. Small coefficients
+    # dominating is inherent -- a^3 eats the product budget fast.
+    b = _cubefree(rng, min(CUBEFREE_MAX[difficulty], cap // 8))
+    a_max = min(COEF_TIER_MAX_CUBE[difficulty], _icbrt(cap // b))
+    a = rng.randint(2, a_max)
+    k = a ** 3 * b
+    question = rf"\sqrt[3]{{{k}}}"
+    value = sp.Integer(a) * sp.cbrt(b)
+    # sp.latex would turn cbrt(9) into 3^{2/3} -- correct, but not radical
+    # notation a student is being asked to produce. Render the radical
+    # ourselves and keep `value` as the thing verification re-derives.
+    answer = rf"{a} \sqrt[3]{{{b}}}"
+    return _mk(question, value, "simplify_cube_radical", difficulty, answer_latex=answer)

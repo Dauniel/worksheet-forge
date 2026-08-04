@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import random
 
 import pytest
@@ -131,3 +132,23 @@ def test_no_hardcoded_problem_lists(key):
         return
 
     assert len(seen) >= 50, f"{key} produced only {len(seen)} distinct problems in 100 seeds"
+
+
+@pytest.mark.parametrize("key", _keys())
+def test_question_bodies_do_not_mix_fraction_sizes(key):
+    r"""One line must not carry both a \dfrac and a \frac.
+
+    Question bodies are display-style, so every fraction on the line has to
+    be \dfrac. Mixing renders a full-size coefficient beside a shrunken
+    constant -- e.g. ``-2x + 5 \ge -\dfrac{1}{3}x - \frac{10}{3}``, which
+    shipped on a worksheet before latexfmt.linear/poly scaled the constant
+    along with the variable term. Answer keys are exempt: CLAUDE.md keeps
+    them on inline \frac by convention.
+    """
+    inline = re.compile(r"(?<!d)\\frac")
+    gen = all_generators()[key]
+    for seed in range(SEEDS):
+        difficulty = DIFFICULTIES[seed % len(DIFFICULTIES)]
+        q = gen(random.Random(seed), difficulty).question_latex
+        if r"\dfrac" in q and inline.search(q):
+            pytest.fail(f"{key} seed {seed}: mixed fraction sizes in {q!r}")

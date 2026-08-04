@@ -12,7 +12,7 @@ from fractions import Fraction
 
 import sympy as sp
 
-from ..core.latexfmt import linear, num
+from ..core.latexfmt import coeff, linear, num, terms
 from ..core.problem import Problem
 from ..core.registry import register
 from ..core.sampling import distinct, nonzero_int, pick
@@ -87,6 +87,60 @@ def identify_slope_intercept(rng: random.Random, difficulty: str) -> Problem:
         subskill="identify_slope_intercept",
         difficulty=difficulty,
         verify={"kind": "slope_intercept"},
+    )
+
+
+@register("slope", "slope_and_equation")
+def slope_and_equation(rng: random.Random, difficulty: str) -> Problem:
+    m, b = _line(rng, difficulty)
+    (x1, y1), (x2, y2) = _points(rng, m, difficulty, b)
+    ms = sp.Rational(m.numerator, m.denominator)
+    return Problem(
+        question_latex=f"$({x1}, {y1})$ and $({x2}, {y2})$",
+        answer_latex=rf"$m = {sp.latex(ms)}$, \quad $y = {linear(m, b)}$",
+        answer_expr=(ms, sp.Integer(b)),
+        topic="slope",
+        subskill="slope_and_equation",
+        difficulty=difficulty,
+        verify={"kind": "slope_and_line"},
+    )
+
+
+@register("slope", "identify_from_standard")
+def identify_from_standard(rng: random.Random, difficulty: str) -> Problem:
+    m, b = _line(rng, difficulty, allow_zero_slope=False)
+    ms = sp.Rational(m.numerator, m.denominator)
+    d = m.denominator
+    if d == 1:
+        k = d * rng.randint(2, 4)
+    else:
+        k = d * rng.randint(1, 3)
+    A = int(k * m)
+    C_const = k * b
+
+    form = rng.choice((1, 2))
+    if form == 1:
+        # A*x - k*y = -k*b  ->  Ax + By = C
+        B = -k
+        C = -C_const
+        if rng.random() < 0.5:
+            A, B, C = -A, -B, -C
+        lhs = terms(coeff(A, "x"), coeff(B, "y"))
+        rhs = num(C)
+    else:
+        # k*y = A*x + k*b -> By = Ax + C
+        B = k
+        lhs = coeff(B, "y")
+        rhs = linear(A, C_const)
+
+    return Problem(
+        question_latex=f"${lhs} = {rhs}$",
+        answer_latex=rf"$m = {sp.latex(ms)}$, \quad $b = {sp.latex(sp.Integer(b))}$",
+        answer_expr=(ms, sp.Integer(b)),
+        topic="slope",
+        subskill="identify_from_standard",
+        difficulty=difficulty,
+        verify={"kind": "slope_intercept_standard"},
     )
 
 

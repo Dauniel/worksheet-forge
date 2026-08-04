@@ -82,7 +82,8 @@ def linear(m, b, var: str = "x", display: bool = False) -> str:
 
     ``linear(0, 5)`` -> ``5``; ``linear(-1, -3)`` -> ``-x - 3``.
     """
-    return _join([coeff(m, var, display), num(b) if b != 0 else ""])
+    const = dnum if display else num
+    return _join([coeff(m, var, display), const(b) if b != 0 else ""])
 
 
 def poly(coeffs, var: str = "x", display: bool = False) -> str:
@@ -93,7 +94,8 @@ def poly(coeffs, var: str = "x", display: bool = False) -> str:
     for i, c in enumerate(coeffs):
         power = deg - i
         if power == 0:
-            parts.append(num(c) if c != 0 else "")
+            const = dnum if display else num
+            parts.append(const(c) if c != 0 else "")
         elif power == 1:
             parts.append(coeff(c, var, display))
         else:

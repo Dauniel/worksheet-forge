@@ -133,6 +133,20 @@ CATALOG: Dict[str, dict] = {
                    "Write the equation of each line in slope-intercept form."
                ),
                workspace="2.0cm", columns=2),
+            _s("slope_and_equation", "medium",
+               group="Slope and Equation From Two Points",
+               directions=(
+                   "Find the slope of the line through each pair of points, then write "
+                   "the equation of the line in slope-intercept form."
+               ),
+               workspace="2.0cm", columns=2),
+            _s("identify_from_standard", "medium",
+               group="Rewriting in Slope-Intercept Form",
+               directions=(
+                   "Rewrite each equation in slope-intercept form, then identify the "
+                   "slope $m$ and the $y$-intercept $b$."
+               ),
+               workspace="1.8cm", columns=2),
         ],
     },
     "ratios_percents": {
@@ -180,6 +194,7 @@ CATALOG: Dict[str, dict] = {
             _s("two_step", "easy", columns=2),
             _s("multi_step_both_sides", "medium", columns=2),
             _s("fractional", "hard", columns=2),
+            _s("fractional_both_sides", "hard", columns=2),
         ],
     },
     "word_problems": {
@@ -212,6 +227,10 @@ CATALOG: Dict[str, dict] = {
             _s("square_root", "easy", columns=2),
             _s("cube_root", "easy", columns=2),
             _s("simplify_radical", "medium",
+               group="Simplifying Radicals",
+               directions="Simplify each radical completely.",
+               workspace="1.3cm", columns=2),
+            _s("simplify_cube_radical", "medium",
                group="Simplifying Radicals",
                directions="Simplify each radical completely.",
                workspace="1.3cm", columns=2),

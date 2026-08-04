@@ -1,0 +1,66 @@
+title: "Algebra Review: Operations, Equations, Lines, Exponents & Roots"
+header: "Algebra Review"
+sections:
+  - name: "Part A: Order of Operations"
+    directions: "Evaluate each expression completely."
+    workspace: 1.4cm
+    columns: 2
+    problems:
+      - {topic: negatives, subskill: order_of_operations, count: 8, difficulty: medium}
+      - {topic: negatives, subskill: order_of_operations, count: 7, difficulty: hard}
+
+  - name: "Part B: Negative Number Operations"
+    directions: "Evaluate each expression completely."
+    workspace: 1.2cm
+    columns: 2
+    problems:
+      - {topic: negatives, subskill: mul_div_integers, count: 6, difficulty: medium}
+      - {topic: negatives, subskill: mixed_operations, count: 9, difficulty: hard}
+
+  - name: "Part C: Solving Linear Equations"
+    directions: "Solve each equation for $x$."
+    workspace: 1.8cm
+    columns: 2
+    problems:
+      - {topic: linear_equations, subskill: two_step, count: 5, difficulty: medium}
+      - {topic: linear_equations, subskill: with_distribution, count: 5, difficulty: medium}
+      - {topic: linear_equations, subskill: multi_step_both_sides, count: 5, difficulty: hard}
+
+  - name: "Part D: Linear Inequalities"
+    directions: "Solve each inequality for $x$. Remember to reverse the inequality sign when you multiply or divide by a negative number."
+    workspace: 1.8cm
+    columns: 2
+    problems:
+      - {topic: inequalities, subskill: one_step, count: 3, difficulty: easy}
+      - {topic: inequalities, subskill: two_step, count: 6, difficulty: medium}
+      - {topic: inequalities, subskill: multi_step_both_sides, count: 3, difficulty: hard}
+      - {topic: inequalities, subskill: fractional_both_sides, count: 3, difficulty: hard}
+
+  - name: "Part E: Slope-Intercept Form"
+    directions: "Rewrite each equation in slope-intercept form if needed, then identify the slope $m$ and the $y$-intercept $b$."
+    workspace: 1.8cm
+    columns: 2
+    problems:
+      - {topic: slope, subskill: identify_slope_intercept, count: 7, difficulty: medium}
+      - {topic: slope, subskill: identify_from_standard, count: 8, difficulty: medium}
+
+  - name: "Part F: Exponent Rules"
+    directions: "Simplify each expression. Write your answer using only positive exponents."
+    workspace: 1.4cm
+    columns: 2
+    problems:
+      - {topic: exponents, subskill: product_rule, count: 3, difficulty: medium}
+      - {topic: exponents, subskill: quotient_rule, count: 3, difficulty: medium}
+      - {topic: exponents, subskill: power_rule, count: 3, difficulty: medium}
+      - {topic: exponents, subskill: negative_exponents, count: 3, difficulty: medium}
+      - {topic: exponents, subskill: combined_rules, count: 3, difficulty: hard}
+
+  - name: "Part G: Square and Cube Roots"
+    directions: "Simplify each root completely. If the radicand is not a perfect square or cube, use prime factorization to pull out every factor you can."
+    workspace: 1.6cm
+    columns: 3
+    problems:
+      - {topic: roots, subskill: square_root, count: 3, difficulty: hard}
+      - {topic: roots, subskill: cube_root, count: 2, difficulty: hard}
+      - {topic: roots, subskill: simplify_radical, count: 7, difficulty: hard}
+      - {topic: roots, subskill: simplify_cube_radical, count: 3, difficulty: hard}

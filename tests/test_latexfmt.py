@@ -75,3 +75,26 @@ def test_poly_edge_cases():
     assert poly([1, -1, 0]) == "x^{2} - x"
     assert poly([0, 3, -5]) == "3x - 5"
     assert poly([2, 0, 0, 1]) == "2x^{3} + 1"
+
+
+def test_display_mode_scales_the_constant_too():
+    r"""A display-style line must not mix \dfrac and \frac on one line.
+
+    ``linear(m, b, display=True)`` used to pass ``display`` only to the
+    variable term and render the constant with plain ``num``, so
+    ``-2x + 5 >= -x/3 - 10/3`` printed a full-size coefficient fraction next
+    to a shrunken constant fraction.
+    """
+    out = linear(Fraction(-1, 3), Fraction(-10, 3), display=True)
+    assert r"\dfrac" in out
+    assert r"-\frac" not in out
+    assert out == r"-\dfrac{1}{3}x - \dfrac{10}{3}"
+
+
+def test_poly_display_mode_scales_the_constant_too():
+    out = poly([2, Fraction(-7, 2)], display=True)
+    assert out == r"2x - \dfrac{7}{2}"
+
+
+def test_non_display_constant_stays_inline():
+    assert linear(Fraction(1, 2), Fraction(3, 4)) == r"\frac{1}{2}x + \frac{3}{4}"

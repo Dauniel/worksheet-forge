@@ -134,3 +134,26 @@ def fractional(rng: random.Random, difficulty: str) -> Problem:
         rhs = dnum(Fraction(x_bound + a, d) + b)
 
     return _mk(lhs, rel, rhs, "fractional", difficulty)
+
+
+@register("inequalities", "fractional_both_sides")
+def fractional_both_sides(rng: random.Random, difficulty: str) -> Problem:
+    """Fractional coefficients on both sides of the inequality."""
+    lo, hi = RANGES[difficulty]
+    rel = rng.choice(list(RELS))
+    x_bound = nonzero_int(rng, -hi, hi)
+    cap = min(hi, 9)
+    # Fraction() reduces, so drawing a numerator that happens to be a multiple
+    # of its denominator yields an integer coefficient. Redraw until at least
+    # one side survives reduction with a real denominator -- otherwise this
+    # subskill degenerates into multi_step_both_sides with no fraction in sight.
+    while True:
+        m1 = Fraction(nonzero_int(rng, -cap, cap), pick(rng, NICE_DENOMS))
+        m2 = Fraction(nonzero_int(rng, -cap, cap), pick(rng, NICE_DENOMS))
+        if m1 != m2 and (m1.denominator > 1 or m2.denominator > 1):
+            break
+    b1 = nonzero_int(rng, -hi, hi)
+    b2 = (m1 - m2) * x_bound + b1
+    lhs = linear(m1, b1, display=True)
+    rhs = linear(m2, b2, display=True)
+    return _mk(lhs, rel, rhs, "fractional_both_sides", difficulty)

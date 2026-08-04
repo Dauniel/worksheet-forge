@@ -264,6 +264,57 @@ def _v_slope_intercept(p: Problem) -> None:
         )
 
 
+def _v_slope_and_line(p: Problem) -> None:
+    """Recompute slope from the printed points; check both stated m and line."""
+    (x1, y1), (x2, y2) = _points_in(p)
+    m = sp.Rational(y2 - y1, x2 - x1)
+
+    m_txt = re.search(r"m\s*=\s*([^$,]+)", p.answer_latex)
+    if not m_txt:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no slope in {p.answer_latex!r}")
+    stated_m = latex_to_sympy(m_txt.group(1))
+    if not _equal(stated_m, m):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} has slope {m}, key states {stated_m}"
+        )
+
+    line_txt = re.search(r"y\s*=\s*([^$]+)\$", p.answer_latex)
+    if not line_txt:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no line in {p.answer_latex!r}")
+    x = sp.Symbol("x")
+    rhs = latex_to_sympy(line_txt.group(1))
+    for px, py in ((x1, y1), (x2, y2)):
+        if not _equal(rhs.subs(x, px), py):
+            raise VerificationError(
+                f"{p.topic}/{p.subskill}: key {p.answer_latex} misses point ({px}, {py})"
+            )
+
+
+def _v_slope_intercept_standard(p: Problem) -> None:
+    """Solve the printed standard-form equation for y independently."""
+    text = p.question_latex.strip().strip("$")
+    lhs_text, rhs_text = text.split("=", 1)
+    lhs = latex_to_sympy(lhs_text)
+    rhs = latex_to_sympy(rhs_text)
+    x, y = sp.Symbol("x"), sp.Symbol("y")
+    sols = sp.solve(sp.Eq(lhs, rhs), y)
+    if len(sols) != 1:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} has {len(sols)} solutions for y"
+        )
+    sol = sols[0]
+    poly = sp.Poly(sol, x)
+    if poly.degree() > 1:
+        raise VerificationError(f"{p.topic}/{p.subskill}: {p.question_latex} is not linear in x")
+    m, b = sol.coeff(x, 1), sol.coeff(x, 0)
+    got_m, got_b = p.answer_expr
+    if not (_equal(m, got_m) and _equal(b, got_b)):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} has m={m}, b={b}; "
+            f"key says m={got_m}, b={got_b}"
+        )
+
+
 def _v_point_slope(p: Problem) -> None:
     """The keyed line must have the printed slope and hit the printed point."""
     pts = _POINT.findall(p.question_latex)
@@ -506,6 +557,8 @@ STRATEGIES = {
     "slope_from_points": _v_slope_from_points,
     "line_through_points": _v_line_through_points,
     "slope_intercept": _v_slope_intercept,
+    "slope_and_line": _v_slope_and_line,
+    "slope_intercept_standard": _v_slope_intercept_standard,
     "point_slope": _v_point_slope,
     "percent_of": _v_percent_of,
     "percent_change": _v_percent_change,
