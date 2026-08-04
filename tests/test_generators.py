@@ -41,6 +41,15 @@ SMALL_REACHABLE_SPACE = {
         "positive perfect cubes only, bases 2-5 at medium difficulty "
         "(<=6 across all tiers); no coefficient/fraction/sign forms",
     ),
+    ("roots", "simplify_cube_radical"): (
+        29,  # cbrt(a^3*b) -> a*cbrt(b), a in [2,5], b cube-free <= cap//8
+        # = 25 at medium (CUBEFREE_MAX/COEF_TIER_MAX_CUBE/PRODUCT_CAP_CUBE
+        # ["medium"]), product a^3*b <= 200. Brute-force enumerated: 29
+        # distinct printed radicands are reachable at medium tier.
+        "cube-free radicand + coefficient product capped at 200 (medium "
+        "tier); brute-force enumeration gives exactly 29 distinct reachable "
+        "radicands",
+    ),
     ("roots", "simplify_radical"): (
         32,  # sqrt(a^2*b) -> a*sqrt(b), a in [2,9], b squarefree <= cap//4
         # = 27 at medium (SQUAREFREE_MAX/COEF_TIER_MAX/PRODUCT_CAP["medium"]),

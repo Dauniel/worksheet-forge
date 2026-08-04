@@ -36,9 +36,22 @@ it draws a cube-free radicand b and a coefficient a (a >= 2), caps the
 product a^3*b (not the factors independently, per tier -- see
 `PRODUCT_CAP_CUBE`), and produces cbrt(a^3*b) -> a*cbrt(b). Cube-free means no
 prime divides b three or more times, so b may still be divisible by a square
-(cbrt(4) and cbrt(9) are already fully simplified) -- that is what keeps the
-radicand space wide enough to clear the ordinary 60%-distinct variance floor
-at every tier with no `SMALL_REACHABLE_SPACE` exemption.
+(cbrt(4) and cbrt(9) are already fully simplified), which is what keeps the
+radicand space as wide as it is.
+
+It is a small-reachable-space generator too, and for a sharper reason than
+the square case: a^3 consumes the product budget so fast that capping the
+radicand at 250 leaves the coefficient almost no room (a is effectively
+2..5, and a = 5 already forces b = 2). Holding radicands off the high
+triple digits is the pedagogical priority -- cbrt(680) is arithmetic
+busywork, not factoring practice -- so this generator is listed in both
+tests' `SMALL_REACHABLE_SPACE` tables with its exact brute-forced counts
+rather than having its cap raised to satisfy the generic floor.
+
+Small coefficients dominate every tier here (roughly 80% land on a = 2)
+for the same reason: the count of legal b values collapses as a grows.
+Drawing a first to even that out was tried and reverted -- it starves b's
+range and drops the generator under the variance floor outright.
 """
 
 from __future__ import annotations
@@ -81,9 +94,9 @@ COEF_TIER_MAX = {"easy": 8, "medium": 9, "hard": 10}
 # every (a, b) pair the generator can produce; it is never clamped past.
 # Radicands stay in the low hundreds so the prime factorization is work a
 # student can do by hand.
-PRODUCT_CAP_CUBE = {"easy": 400, "medium": 550, "hard": 700}
-CUBEFREE_MAX = {"easy": 80, "medium": 120, "hard": 180}
-COEF_TIER_MAX_CUBE = {"easy": 7, "medium": 9, "hard": 11}
+PRODUCT_CAP_CUBE = {"easy": 150, "medium": 200, "hard": 250}
+CUBEFREE_MAX = {"easy": 18, "medium": 25, "hard": 31}
+COEF_TIER_MAX_CUBE = {"easy": 4, "medium": 5, "hard": 5}
 
 
 def _is_squarefree(n: int) -> bool:
