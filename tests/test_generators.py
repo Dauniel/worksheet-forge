@@ -42,12 +42,12 @@ SMALL_REACHABLE_SPACE = {
         "(<=6 across all tiers); no coefficient/fraction/sign forms",
     ),
     ("roots", "simplify_cube_radical"): (
-        29,  # cbrt(a^3*b) -> a*cbrt(b), a in [2,5], b cube-free <= cap//8
-        # = 25 at medium (CUBEFREE_MAX/COEF_TIER_MAX_CUBE/PRODUCT_CAP_CUBE
-        # ["medium"]), product a^3*b <= 200. Brute-force enumerated: 29
+        16,  # cbrt(a^3*b) -> a*cbrt(b), a in [2,3], b cube-free <= cap//8
+        # = 15 at medium (CUBEFREE_MAX/COEF_TIER_MAX_CUBE/PRODUCT_CAP_CUBE
+        # ["medium"]), product a^3*b <= 125. Brute-force enumerated: 16
         # distinct printed radicands are reachable at medium tier.
-        "cube-free radicand + coefficient product capped at 200 (medium "
-        "tier); brute-force enumeration gives exactly 29 distinct reachable "
+        "cube-free radicand + coefficient product capped at 125 (medium "
+        "tier); brute-force enumeration gives exactly 16 distinct reachable "
         "radicands",
     ),
     ("roots", "simplify_radical"): (

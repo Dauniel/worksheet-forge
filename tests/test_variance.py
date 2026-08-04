@@ -41,14 +41,15 @@ SMALL_REACHABLE_SPACE = {
         "(<=6 across all tiers); no coefficient/fraction/sign forms",
     ),
     ("roots", "simplify_cube_radical"): (
-        20,  # cbrt(a^3*b) -> a*cbrt(b), a in [2,4], b cube-free <= cap//8
-        # = 18 at easy (CUBEFREE_MAX/COEF_TIER_MAX_CUBE/PRODUCT_CAP_CUBE
-        # ["easy"]), product a^3*b <= 150. Brute-force enumerated: 20
-        # distinct printed radicands are reachable, and a 4000-draw sweep of
-        # the live generator reaches all 20.
-        "cube-free radicand + coefficient product capped at 150 (easy tier) "
-        "to keep radicands off the high triple digits; a^3 eats the budget "
-        "fast, so brute-force enumeration gives exactly 20 reachable values",
+        12,  # cbrt(a^3*b) -> a*cbrt(b), a in [2,3], b cube-free <= cap//8
+        # = 12 at easy (CUBEFREE_MAX/COEF_TIER_MAX_CUBE/PRODUCT_CAP_CUBE
+        # ["easy"]), product a^3*b <= 100. Brute-force enumerated: the 12
+        # reachable radicands are exactly {16, 24, 32, 40, 48, 54, 56, 72,
+        # 80, 81, 88, 96}, and a 4000-draw sweep reaches all 12.
+        "cube-free radicand + coefficient product capped at 100 (easy tier) "
+        "to keep radicands small; a^3 eats the budget fast -- the smallest "
+        "legal cube radical is already cbrt(16), so brute-force enumeration "
+        "gives exactly 12 reachable values",
     ),
     ("roots", "simplify_radical"): (
         20,  # sqrt(a^2*b) -> a*sqrt(b), a in [2,8], b squarefree <= cap//4

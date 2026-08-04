@@ -41,12 +41,16 @@ radicand space as wide as it is.
 
 It is a small-reachable-space generator too, and for a sharper reason than
 the square case: a^3 consumes the product budget so fast that capping the
-radicand at 250 leaves the coefficient almost no room (a is effectively
-2..5, and a = 5 already forces b = 2). Holding radicands off the high
-triple digits is the pedagogical priority -- cbrt(680) is arithmetic
-busywork, not factoring practice -- so this generator is listed in both
+radicand at 150 leaves the coefficient almost no room (a is effectively
+2..4, and a = 4 already forces b = 2). The floor is unusually high as well
+-- the smallest cube radical that simplifies at all is cbrt(16) = 2*cbrt(2)
+-- so the whole reachable range is 16..144, only 20 values at the hard tier.
+Keeping radicands small is the pedagogical priority (cbrt(680) is arithmetic
+busywork, not factoring practice), so this generator is listed in both
 tests' `SMALL_REACHABLE_SPACE` tables with its exact brute-forced counts
-rather than having its cap raised to satisfy the generic floor.
+rather than having its cap raised to satisfy the generic floor. The
+practical cost is real: cube-simplifying problems repeat across worksheets
+sooner than any other subskill here.
 
 Small coefficients dominate every tier here (roughly 80% land on a = 2)
 for the same reason: the count of legal b values collapses as a grows.
@@ -94,9 +98,9 @@ COEF_TIER_MAX = {"easy": 8, "medium": 9, "hard": 10}
 # every (a, b) pair the generator can produce; it is never clamped past.
 # Radicands stay in the low hundreds so the prime factorization is work a
 # student can do by hand.
-PRODUCT_CAP_CUBE = {"easy": 150, "medium": 200, "hard": 250}
-CUBEFREE_MAX = {"easy": 18, "medium": 25, "hard": 31}
-COEF_TIER_MAX_CUBE = {"easy": 4, "medium": 5, "hard": 5}
+PRODUCT_CAP_CUBE = {"easy": 100, "medium": 125, "hard": 150}
+CUBEFREE_MAX = {"easy": 12, "medium": 15, "hard": 18}
+COEF_TIER_MAX_CUBE = {"easy": 3, "medium": 3, "hard": 4}
 
 
 def _is_squarefree(n: int) -> bool:
