@@ -19,11 +19,9 @@ SEEDS = 1000
 # the pedagogical constraints. `roots.square_root` and `roots.cube_root` are
 # deliberately plain (see forge/generators/roots.py's module docstring): a
 # bare radical of a perfect square/cube, positive only, no coefficient, no
-# fraction, no sign. `roots.simplify_radical` is not exempt here -- its
-# widened ranges push its true ceiling (72 distinct a^2*b products, the
-# absolute max under the shared 225 cap for any a>=2/squarefree b) close
-# enough to clear the generic floor most of the time; see its own entry's
-# comment for why it still sits near that ceiling rather than exactly at it.
+# fraction, no sign. `roots.simplify_radical` is also exempt here -- its
+# product cap (<=108) keeps its true reachable ceiling small at every tier;
+# see its own entry's comment for the exact brute-forced count.
 #
 # Each entry is (topic, subskill) -> (exact reachable count at "medium",
 # reason). For these subskills the test swaps the generic 50-distinct floor
@@ -34,9 +32,9 @@ SEEDS = 1000
 # ALLOWED_UNCATALOGED pattern in tests/test_catalog_completeness.py.
 SMALL_REACHABLE_SPACE = {
     ("roots", "square_root"): (
-        13,  # bases 2..14 (SQUARE_BASE["medium"]), bare sqrt(n^2) = n only
-        "positive perfect squares only, bases 2-14 at medium difficulty "
-        "(<=15 across all tiers); no coefficient/fraction/sign forms",
+        9,  # bases 2..10 (SQUARE_BASE["medium"]), bare sqrt(n^2) = n only
+        "positive perfect squares only, bases 2-10 at medium difficulty "
+        "(<=12 across all tiers); no coefficient/fraction/sign forms",
     ),
     ("roots", "cube_root"): (
         4,  # bases 2..5 (CUBE_BASE["medium"]), bare cbrt(n^3) = n only
@@ -44,18 +42,13 @@ SMALL_REACHABLE_SPACE = {
         "(<=6 across all tiers); no coefficient/fraction/sign forms",
     ),
     ("roots", "simplify_radical"): (
-        67,  # sqrt(a^2*b) -> a*sqrt(b), a in [2,10], b squarefree <=45 at
-        # medium (SQUAREFREE_MAX/COEF_TIER_MAX["medium"]), product a^2*b <=
-        # 225. 72 is the absolute ceiling for ANY a>=2/squarefree b under
-        # that cap, at any tier -- ranges are already pushed to within a few
-        # values of it. Even that ceiling sits close enough to the generic
-        # 50-floor that ordinary birthday-paradox variance in a fixed
-        # 100-seed run can land under 50 (observed 46/100 at the absolute
-        # max), so it needs the same treatment as the other two subskills
-        # rather than "just" widening ranges further.
-        "squarefree radicand + coefficient product capped at 225; medium "
-        "tier is already within a few values of the 72-value absolute max "
-        "the cap allows for any tier",
+        32,  # sqrt(a^2*b) -> a*sqrt(b), a in [2,9], b squarefree <= cap//4
+        # = 27 at medium (SQUAREFREE_MAX/COEF_TIER_MAX/PRODUCT_CAP["medium"]),
+        # product a^2*b <= 108. Brute-force enumerated: 32 distinct printed
+        # radicands k = a^2*b are reachable at medium tier.
+        "squarefree radicand + coefficient product capped at 108 (medium "
+        "tier); brute-force enumeration gives exactly 32 distinct reachable "
+        "radicands",
     ),
 }
 

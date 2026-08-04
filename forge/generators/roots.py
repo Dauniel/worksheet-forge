@@ -1,15 +1,19 @@
 """Square roots, cube roots, and simplifying radicals (pre-algebra level).
 
-Radicands stay in the low triple digits (<= 225, i.e. nothing past 15^2 or
-6^3) so every value here is either a standard memorized square/cube or a
-small radical simplification a student can sanity-check by hand.
+Square radicands stay at <= 150 (nothing past 12^2 for a perfect square), and
+cube radicands stay in the low triple digits (<= 216, i.e. nothing past 6^3),
+so every value here is either a standard memorized square/cube or a small
+radical simplification a student can sanity-check by hand. The square side is
+deliberately weighted low -- most simplify_radical draws land at or under 108
+even at the hard tier -- because a radicand in the 200s reads as arithmetic
+busywork rather than factoring practice.
 
 ``square_root`` and ``cube_root`` are deliberately plain: a bare radical of a
 perfect square/cube, positive base only, no leading coefficient, no fraction
 radicand, no sign. That is the whole problem -- nothing else is sampled.
 
-This is a *known, accepted* small reachable space. Perfect squares <= 225
-give only 14 possible bases (2..15) and perfect cubes <= 216 give only 5
+This is a *known, accepted* small reachable space. Perfect squares <= 144
+give only 11 possible bases (2..12) and perfect cubes <= 216 give only 5
 (2..6); restricting further per difficulty tier (see the ranges below) makes
 each tier's space smaller still. This intrinsically cannot clear the
 generic anti-hardcoding variance floor (`tests/test_variance.py` normally
@@ -20,10 +24,12 @@ the test still asserts they reach at/near that true ceiling and that no
 single value dominates, so a generator that collapses onto a few favorites
 is still caught.
 
-``simplify_radical`` stays a wide, ordinary-variance generator: it draws a
-squarefree radicand b and a coefficient a (a >= 2) with the product a^2*b
-capped at 225, producing sqrt(a^2*b) -> a*sqrt(b). No sign, no fraction, no
-leading coefficient beyond the structural `a` -- positive-only throughout.
+``simplify_radical`` is also a small-reachable-space generator now: it draws
+a squarefree radicand b and a coefficient a (a >= 2) with the product a^2*b
+capped at <= 150 (per tier, see `PRODUCT_CAP`), producing
+sqrt(a^2*b) -> a*sqrt(b). No sign, no fraction, no leading coefficient beyond
+the structural `a` -- positive-only throughout. It is listed in both tests'
+`SMALL_REACHABLE_SPACE` tables with its exact reachable counts per tier.
 
 ``simplify_cube_radical`` is the cube-root analogue of ``simplify_radical``:
 it draws a cube-free radicand b and a coefficient a (a >= 2), caps the
@@ -45,26 +51,28 @@ import sympy as sp
 from ..core.problem import Problem
 from ..core.registry import register
 
-# Bases square to at most 15^2 = 225 and cube to at most 6^3 = 216 -- both
-# comfortably "low triple digits", per the standard memorized square/cube
-# tables. This is the *entire* sample space for these two subskills now
-# that no coefficient/fraction/sign forms remain -- see the module
-# docstring and tests/test_variance.py's SMALL_REACHABLE_SPACE table for the
-# exact reachable-count accounting this implies.
-SQUARE_BASE = {"easy": (2, 12), "medium": (2, 14), "hard": (2, 15)}
+# Bases square to at most 12^2 = 144 and cube to at most 6^3 = 216 -- the
+# square side capped tighter than "low triple digits", cube side left as-is.
+# This is the *entire* sample space for these two subskills now that no
+# coefficient/fraction/sign forms remain -- see the module docstring and
+# tests/test_variance.py's SMALL_REACHABLE_SPACE table for the exact
+# reachable-count accounting this implies.
+SQUARE_BASE = {"easy": (2, 9), "medium": (2, 10), "hard": (2, 12)}
 CUBE_BASE = {"easy": (2, 5), "medium": (2, 5), "hard": (2, 6)}
 
-# sqrt(a^2 * b) -> a*sqrt(b): the PRODUCT a^2*b is capped, not the factors
-# independently -- the coefficient bound is derived from whichever squarefree
-# radicand b was drawn, so a^2*b can never land outside the cap regardless of
-# how b and a combine.
-# bmax/amax here are deliberately pushed close to what the 225 cap allows at
-# all (72 distinct a^2*b products is the absolute ceiling for any a>=2,
-# squarefree b -- see tests/test_generators.py's SMALL_REACHABLE_SPACE) so
-# the fuzz/variance tests have the widest possible space to draw from.
-PRODUCT_CAP = 225
-SQUAREFREE_MAX = {"easy": 30, "medium": 45, "hard": 56}
-COEF_TIER_MAX = {"easy": 8, "medium": 10, "hard": 11}
+# sqrt(a^2 * b) -> a*sqrt(b): the PRODUCT a^2*b is capped (per tier, never
+# past 108), not the factors independently -- the coefficient bound is
+# derived from whichever squarefree radicand b was drawn, so a^2*b can never
+# land outside the cap regardless of how b and a combine.
+# b is drawn no larger than cap // 4 so that the smallest legal coefficient
+# (a = 2) always fits under the cap -- mirrors the cube-root analogue's
+# `cap // 8` bound below. This means a_max is never clamped up past the cap;
+# it holds by construction. See tests/test_variance.py and
+# tests/test_generators.py's SMALL_REACHABLE_SPACE entries for the exact
+# reachable-count accounting this implies at each tier.
+PRODUCT_CAP = {"easy": 72, "medium": 108, "hard": 150}
+SQUAREFREE_MAX = {"easy": 18, "medium": 27, "hard": 37}
+COEF_TIER_MAX = {"easy": 8, "medium": 9, "hard": 10}
 
 # cbrt(a^3 * b) -> a*cbrt(b): the PRODUCT a^3*b is capped, not the factors
 # independently -- the radicand b is drawn no larger than cap//8 so that the
@@ -166,9 +174,11 @@ def cube_root(rng: random.Random, difficulty: str) -> Problem:
 
 @register("roots", "simplify_radical")
 def simplify_radical(rng: random.Random, difficulty: str) -> Problem:
-    b = _squarefree(rng, SQUAREFREE_MAX[difficulty])
-    a_max = min(COEF_TIER_MAX[difficulty], math.isqrt(PRODUCT_CAP // b))
-    a_max = max(a_max, 2)  # b's own range guarantees this in practice
+    cap = PRODUCT_CAP[difficulty]
+    # cap // 4 keeps a = 2 (the smallest legal coefficient) inside the cap for
+    # every b that can be drawn, so a_max is never clamped up past it.
+    b = _squarefree(rng, min(SQUAREFREE_MAX[difficulty], cap // 4))
+    a_max = min(COEF_TIER_MAX[difficulty], math.isqrt(cap // b))
     a = rng.randint(2, a_max)
     k = a * a * b
     question = rf"\sqrt{{{k}}}"

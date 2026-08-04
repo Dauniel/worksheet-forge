@@ -19,8 +19,8 @@ RUNS = 50
 # the pedagogical constraints. `roots.square_root` and `roots.cube_root` are
 # deliberately plain (see forge/generators/roots.py's module docstring): a
 # bare radical of a perfect square/cube, positive only, no coefficient, no
-# fraction, no sign. Under the shared 225/216 radicand cap that leaves only
-# as many outputs as there are bases in the "easy" range.
+# fraction, no sign. Under the 108/216 radicand caps that leaves only as
+# many outputs as there are bases in the "easy" range.
 #
 # Each entry is (topic, subskill) -> (exact reachable count at "easy",
 # reason). For these subskills the test below swaps the generic 60%-spread
@@ -31,9 +31,9 @@ RUNS = 50
 # unreachable generic floor.
 SMALL_REACHABLE_SPACE = {
     ("roots", "square_root"): (
-        11,  # bases 2..12 (SQUARE_BASE["easy"]), bare sqrt(n^2) = n only
-        "positive perfect squares only, bases 2-12 at easy difficulty "
-        "(<=15 across all tiers); no coefficient/fraction/sign forms",
+        8,  # bases 2..9 (SQUARE_BASE["easy"]), bare sqrt(n^2) = n only
+        "positive perfect squares only, bases 2-9 at easy difficulty "
+        "(<=12 across all tiers); no coefficient/fraction/sign forms",
     ),
     ("roots", "cube_root"): (
         4,  # bases 2..5 (CUBE_BASE["easy"]), bare cbrt(n^3) = n only
@@ -41,15 +41,14 @@ SMALL_REACHABLE_SPACE = {
         "(<=6 across all tiers); no coefficient/fraction/sign forms",
     ),
     ("roots", "simplify_radical"): (
-        55,  # sqrt(a^2*b) -> a*sqrt(b), a in [2,8], b squarefree <=30 at
-        # easy (SQUAREFREE_MAX/COEF_TIER_MAX["easy"]), product a^2*b <= 225.
-        # See tests/test_generators.py's SMALL_REACHABLE_SPACE entry for the
-        # same subskill: the absolute max under the cap (72, any tier) is
-        # itself close enough to the generic floor that ordinary
-        # birthday-paradox variance can dip under it in a fixed run.
-        "squarefree radicand + coefficient product capped at 225; even the "
-        "72-value absolute max the cap allows sits close to the generic "
-        "spread floor",
+        20,  # sqrt(a^2*b) -> a*sqrt(b), a in [2,8], b squarefree <= cap//4
+        # = 18 at easy (SQUAREFREE_MAX/COEF_TIER_MAX/PRODUCT_CAP["easy"]),
+        # product a^2*b <= 72. Brute-force enumerated: 20 distinct printed
+        # radicands k = a^2*b are reachable. See tests/test_generators.py's
+        # SMALL_REACHABLE_SPACE entry for the same subskill at medium tier.
+        "squarefree radicand + coefficient product capped at 72 (easy tier); "
+        "brute-force enumeration gives exactly 20 distinct reachable "
+        "radicands",
     ),
 }
 
