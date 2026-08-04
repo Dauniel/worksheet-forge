@@ -64,6 +64,21 @@ fractions.
   consolidated `\section*{Answer Key}` with a `\subsection*` per part. The
   student copy is a **separate `.tex` file** with no answer content at all.
 - Both PDFs go to `out/`.
+- **Never concatenate the two PDFs.** The teacher copy already contains every
+  problem, so joining it to the student copy prints the whole worksheet twice
+  before the key — this shipped once. A single-file hand-out is the teacher
+  copy, unmodified: problems once, then the key. `tests/test_build.py`'s
+  `test_teacher_copy_states_each_problem_exactly_once` holds the line.
+
+## Filing a delivered worksheet
+
+Worksheets given to a student live in `tutor/worksheets/<Student>/` as
+`<YYYY-MM-DD>_<Name>_spec.yaml`, `..._student.tex`, `..._key.tex`, and a
+single `<YYYY-MM-DD>_<Name>.pdf` — that PDF is the teacher copy (see above),
+not a merge. `out/` is gitignored; worksheets are reproducible from the spec
+plus the seed, so build delivered copies with `--no-history`, which makes the
+output depend on the seed alone. Without it the anti-repeat ledger silently
+shifts the draws between runs and the same seed stops reproducing the sheet.
 
 ### Coefficient rendering
 

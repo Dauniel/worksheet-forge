@@ -70,6 +70,29 @@ def test_student_copy_contains_no_answers(spec_path):
         assert p.question_latex in ws.student_tex
 
 
+def test_teacher_copy_states_each_problem_exactly_once(spec_path):
+    """The teacher copy IS the deliverable -- problems once, then the key.
+
+    It already contains every problem, so concatenating it onto the student
+    copy to make a "combined" hand-out prints the whole worksheet twice.
+    That shipped once. Nothing downstream should ever need to merge the two
+    PDFs: student_tex is the clean copy, key_tex is the copy with the key.
+    """
+    spec = load_spec(spec_path)
+    ws = generate(spec, seed=5)
+    body = ws.key_tex.split("Answer Key")[0]
+    for p in ws.problems:
+        assert body.count(p.question_latex) == 1, (
+            f"{p.topic}/{p.subskill}: question appears "
+            f"{body.count(p.question_latex)} times in the teacher copy body"
+        )
+    # The name recurs once more as the key's \subsection* per part, which is
+    # the documented layout -- so this counts the problem body only.
+    for sec in spec["sections"]:
+        assert body.count(sec["name"]) == 1, f"{sec['name']} appears twice"
+        assert ws.student_tex.count(sec["name"]) == 1
+
+
 def test_no_title_block_and_no_newpage_between_sections(spec_path):
     spec = load_spec(spec_path)
     ws = generate(spec, seed=3)
