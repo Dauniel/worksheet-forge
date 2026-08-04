@@ -74,5 +74,5 @@ def unit_price_comparison(rng: random.Random, difficulty: str) -> Problem:
         topic="unit_rates",
         subskill="unit_price_comparison",
         difficulty=difficulty,
-        verify={"kind": "unit_price_comparison", "answer_check": None},
+        verify={"kind": "unit_price_comparison"},
     )

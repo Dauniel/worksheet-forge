@@ -18,7 +18,7 @@ from sympy.parsing.sympy_parser import (
     standard_transformations,
 )
 
-from .problem import Problem
+from .problem import Problem, normalize
 
 _TRANSFORMS = standard_transformations + (implicit_multiplication,)
 
@@ -104,6 +104,32 @@ def latex_to_sympy(latex: str) -> sp.Expr:
     return expr
 
 
+_REL_TOKEN = re.compile(r"\\geq|\\leq|\\ge|\\le|\\gt|\\lt|<=|>=|<|>")
+_REL_OP = {
+    r"\geq": ">=", r"\leq": "<=", r"\ge": ">=", r"\le": "<=",
+    r"\gt": ">", r"\lt": "<", "<=": "<=", ">=": ">=", "<": "<", ">": ">",
+}
+_REL_CLASS = {"<": sp.Lt, "<=": sp.Le, ">": sp.Gt, ">=": sp.Ge}
+
+
+def _split_relation(s: str):
+    """Split ``lhs REL rhs`` on the first relation token, before the macro
+    guard in :func:`latex_to_sympy` would trip on the backslash."""
+    m = _REL_TOKEN.search(s)
+    if not m:
+        raise VerificationError(f"no relation symbol found in {s!r}")
+    return s[: m.start()], _REL_OP[m.group()], s[m.end() :]
+
+
+def latex_relation_to_sympy(latex: str) -> sp.core.relational.Relational:
+    """Parse ``x \\ge 11`` (or ``<``, ``>``, ``\\le``) into a sympy relation."""
+    s = latex.strip().strip("$").strip()
+    lhs_text, op, rhs_text = _split_relation(s)
+    lhs = latex_to_sympy(lhs_text)
+    rhs = latex_to_sympy(rhs_text)
+    return _REL_CLASS[op](lhs, rhs)
+
+
 def _mixed_to_sympy(latex: str) -> sp.Expr:
     """Mixed numbers ``1\\frac{7}{12}`` mean 1 + 7/12, not 1 * 7/12."""
     s = latex.strip().strip("$").strip()
@@ -181,31 +207,59 @@ def _v_abs_solve(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: {p.question_latex} solves to {sols}, "
             f"key says {expected}"
         )
-
-
-def _v_inequality(p: Problem) -> None:
-    """Check the solution set by testing points on both sides of the boundary."""
-    var = sp.Symbol(p.verify.get("var", "x"))
-    lhs = latex_to_sympy(p.verify["lhs"])
-    rhs = latex_to_sympy(p.verify["rhs"])
-    rel = p.verify["rel"]
-    stated = {"<": sp.Lt, "<=": sp.Le, ">": sp.Gt, ">=": sp.Ge}[rel](lhs, rhs)
-    solved = sp.solve_univariate_inequality(stated, var, relational=False)
-    keyed = p.verify["solution_set"]
-    if solved != keyed:
+    # The PRINTED key (``x = s1 \text{ or } x = s2``) must state the same
+    # roots -- answer_expr alone doesn't catch a rendering bug in the text.
+    printed = [sp.Integer(v) for v in re.findall(r"x\s*=\s*(-?\d+)", p.answer_latex)]
+    printed.sort(key=lambda s: sp.N(s))
+    if len(printed) != len(sols) or not all(_equal(a, b) for a, b in zip(sols, printed)):
         raise VerificationError(
-            f"{p.topic}/{p.subskill}: {p.question_latex} has solution set {solved}, "
-            f"key says {keyed}"
+            f"{p.topic}/{p.subskill}: printed key {p.answer_latex!r} states roots "
+            f"{printed}, but {p.question_latex} solves to {sols}"
         )
 
 
-def _v_tuple(p: Problem) -> None:
-    """Multi-part answers (e.g. slope and intercept) compared componentwise."""
-    expected = list(p.verify["expected"])
-    got = list(p.answer_expr)
-    if len(expected) != len(got) or not all(_equal(a, b) for a, b in zip(expected, got)):
+def _v_inequality(p: Problem) -> None:
+    """Re-derive the solution set from the PRINTED question and the PRINTED
+    key independently -- neither comes from ``p.verify``, which is only used
+    as a secondary cross-check. This is what catches a wrong direction or
+    boundary in the printed answer, not just a self-consistent tautology.
+    """
+    var = sp.Symbol(p.verify.get("var", "x"))
+
+    # 1. Re-derive lhs/rhs/rel from the printed question itself.
+    q_lhs_text, q_op, q_rhs_text = _split_relation(p.question_latex.strip().strip("$"))
+    q_lhs = latex_to_sympy(q_lhs_text)
+    q_rhs = latex_to_sympy(q_rhs_text)
+
+    # 2. The generator's stored lhs/rhs/rel must agree with what's printed.
+    stored_lhs = latex_to_sympy(p.verify["lhs"])
+    stored_rhs = latex_to_sympy(p.verify["rhs"])
+    if not (_equal(stored_lhs, q_lhs) and _equal(stored_rhs, q_rhs) and q_op == p.verify["rel"]):
         raise VerificationError(
-            f"{p.topic}/{p.subskill}: {p.question_latex} -> {expected}, key says {got}"
+            f"{p.topic}/{p.subskill}: printed question {p.question_latex!r} reads as "
+            f"{q_lhs} {q_op} {q_rhs}, but verify[lhs/rhs/rel] says "
+            f"{p.verify['lhs']} {p.verify['rel']} {p.verify['rhs']}"
+        )
+
+    stated = _REL_CLASS[q_op](q_lhs, q_rhs)
+    solved = sp.solve_univariate_inequality(stated, var, relational=False)
+
+    # 3. Parse the PRINTED answer key on its own and require the same set.
+    printed_rel = latex_relation_to_sympy(p.answer_latex)
+    printed_solved = sp.solve_univariate_inequality(printed_rel, var, relational=False)
+    if printed_solved != solved:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} has solution set {solved}, "
+            f"but printed key {p.answer_latex!r} reads as {printed_solved}"
+        )
+
+    # 4. Secondary cross-check against what the generator stored -- not the
+    # sole authority, just a sanity check that it agrees.
+    keyed = p.verify.get("solution_set")
+    if keyed is not None and solved != keyed:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} has solution set {solved}, "
+            f"but verify['solution_set'] says {keyed}"
         )
 
 
@@ -240,6 +294,10 @@ def _v_line_through_points(p: Problem) -> None:
     """The keyed equation must actually pass through both printed points."""
     (x1, y1), (x2, y2) = _points_in(p)
     x = sp.Symbol("x")
+    if "=" not in p.answer_latex:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: key {p.answer_latex!r} has no '=' to parse"
+        )
     rhs = latex_to_sympy(p.answer_latex.split("=", 1)[1])
     for px, py in ((x1, y1), (x2, y2)):
         if not _equal(rhs.subs(x, px), py):
@@ -261,6 +319,23 @@ def _v_slope_intercept(p: Problem) -> None:
         raise VerificationError(
             f"{p.topic}/{p.subskill}: {p.question_latex} has m={m}, b={b}; "
             f"key says m={got_m}, b={got_b}"
+        )
+    _v_check_printed_m_b(p, m, b)
+
+
+def _v_check_printed_m_b(p: Problem, m, b) -> None:
+    """The PRINTED ``m = ..., \\quad b = ...`` key must match the re-derived
+    ``m``/``b`` -- ``answer_expr`` alone doesn't catch a rendering bug."""
+    m_txt = re.search(r"m\s*=\s*([^$,]+)", p.answer_latex)
+    b_txt = re.search(r"b\s*=\s*([^$]+)", p.answer_latex)
+    if not m_txt or not b_txt:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read m/b from {p.answer_latex!r}")
+    printed_m = latex_to_sympy(m_txt.group(1))
+    printed_b = latex_to_sympy(b_txt.group(1))
+    if not (_equal(printed_m, m) and _equal(printed_b, b)):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed key {p.answer_latex!r} reads m={printed_m}, "
+            f"b={printed_b}; re-derived m={m}, b={b}"
         )
 
 
@@ -313,6 +388,7 @@ def _v_slope_intercept_standard(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: {p.question_latex} has m={m}, b={b}; "
             f"key says m={got_m}, b={got_b}"
         )
+    _v_check_printed_m_b(p, m, b)
 
 
 def _v_point_slope(p: Problem) -> None:
@@ -329,6 +405,10 @@ def _v_point_slope(p: Problem) -> None:
     m = latex_to_sympy(m_txt.group(1))
 
     x = sp.Symbol("x")
+    if "=" not in p.answer_latex:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: key {p.answer_latex!r} has no '=' to parse"
+        )
     rhs = latex_to_sympy(p.answer_latex.split("=", 1)[1])
     if not _equal(sp.diff(rhs, x), m):
         raise VerificationError(
@@ -482,6 +562,13 @@ def _v_classify(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: {p.question_latex} classifies as {got}, "
             f"key says {expected}"
         )
+    # The PRINTED key ("Rational, Integer, Whole") must name the same labels.
+    printed = {s.strip().lower() for s in p.answer_latex.strip("$").split(",") if s.strip()}
+    if printed != got:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed key {p.answer_latex!r} says {printed}, "
+            f"but {p.question_latex} classifies as {got}"
+        )
 
 
 def _v_estimate_percent(p: Problem) -> None:
@@ -545,6 +632,14 @@ def _v_unit_price_comparison(p: Problem) -> None:
         raise VerificationError(
             f"{p.topic}/{p.subskill}: better buy is Option {expected}, key says {p.answer_expr}"
         )
+    # Check the PRINTED text specifically, not just answer_expr -- catches a
+    # rendering bug even though today the two strings are identical.
+    printed = str(p.answer_latex).strip().upper().replace("OPTION ", "")
+    if printed != expected:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: better buy is Option {expected}, "
+            f"printed key says {p.answer_latex!r}"
+        )
 
 
 STRATEGIES = {
@@ -553,7 +648,6 @@ STRATEGIES = {
     "solve": _v_solve,
     "inequality": _v_inequality,
     "abs_solve": _v_abs_solve,
-    "tuple": _v_tuple,
     "slope_from_points": _v_slope_from_points,
     "line_through_points": _v_line_through_points,
     "slope_intercept": _v_slope_intercept,
@@ -582,6 +676,27 @@ STRATEGIES = {
 }
 
 
+def _check_verify_fragments(p: Problem) -> None:
+    """Any ``expr``/``lhs``/``rhs`` stored in ``p.verify`` must literally
+    appear in the printed ``question_latex`` -- otherwise nothing enforces
+    that the verified string is what the student actually sees. The one
+    legitimate exception is prose (word problems), where the model is
+    intentionally not literal text in the sentence; those opt out explicitly
+    with ``"prose": True``.
+    """
+    if p.verify.get("prose") is True:
+        return
+    qn = normalize(p.question_latex)
+    for key in ("expr", "lhs", "rhs"):
+        if key in p.verify:
+            frag = normalize(str(p.verify[key]))
+            if frag not in qn:
+                raise VerificationError(
+                    f"{p.topic}/{p.subskill}: verify[{key!r}] = {p.verify[key]!r} does not "
+                    f"appear in the printed question {p.question_latex!r}"
+                )
+
+
 def verify_problem(p: Problem) -> None:
     kind = p.verify.get("kind", "evaluate")
     try:
@@ -589,6 +704,7 @@ def verify_problem(p: Problem) -> None:
     except KeyError:
         raise VerificationError(f"unknown verification kind {kind!r}") from None
     strategy(p)
+    _check_verify_fragments(p)
     _check_answer_latex(p)
 
 
@@ -604,9 +720,10 @@ def _check_answer_latex(p: Problem) -> None:
     except (VerificationError, sp.SympifyError, TypeError, SyntaxError):
         return  # non-numeric keys (e.g. inequalities) are checked by their strategy
     target = p.answer_expr
-    # Sets, relations and multi-part keys are their strategy's job, not this
-    # check -- only plain numeric or algebraic expressions compare meaningfully.
-    opaque = (list, tuple, sp.Set, sp.core.relational.Relational)
+    # Sets, relations, multi-part keys, and plain-string answers (e.g. "Option
+    # A") are their strategy's job, not this check -- only plain numeric or
+    # algebraic expressions compare meaningfully as sympy objects here.
+    opaque = (list, tuple, frozenset, set, sp.Set, sp.core.relational.Relational, str)
     if isinstance(target, opaque) or isinstance(printed, opaque):
         return
     if not _equal(printed, target):
@@ -623,6 +740,15 @@ def verify_all(problems: List[Problem]) -> None:
             verify_problem(p)
         except VerificationError as e:
             errors.append(str(e))
+        except Exception as e:
+            # Any other exception (IndexError, KeyError, ...) means a
+            # generator produced something malformed -- fail this one
+            # problem cleanly instead of crashing the whole build with a
+            # bare traceback.
+            errors.append(
+                f"{p.topic}/{p.subskill}: unexpected {type(e).__name__} during "
+                f"verification: {e}"
+            )
     if errors:
         raise VerificationError(
             f"{len(errors)} answer(s) failed verification:\n  - "

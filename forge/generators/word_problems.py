@@ -48,6 +48,11 @@ def _mk(text: str, lhs: str, rhs: str, value, subskill: str, difficulty: str,
             "lhs": lhs,
             "rhs": rhs,
             "quantities": quantities,
+            # Prose is templated scaffolding, not a literal rendering of the
+            # model -- lhs/rhs are never expected to appear verbatim in the
+            # sentence (verify.py's generic fragment check would otherwise
+            # demand that). _v_word already cross-checks quantities instead.
+            "prose": True,
         },
     )
 

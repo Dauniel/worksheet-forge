@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import dataclasses
+import os
 import re
 import random
 
@@ -9,9 +11,13 @@ import pytest
 
 from forge.core.problem import DIFFICULTIES
 from forge.core.registry import all_generators
-from forge.core.verify import verify_problem
+from forge.core.verify import VerificationError, verify_problem
 
-SEEDS = 1000
+# Full 1000-seed sweep is thorough but slow (~3.9ms/verification * ~67k calls
+# in this file alone, ~8 min of the suite's ~10 min). Default to a fast
+# 250-seed pass for local iteration; set FORGE_FULL_FUZZ=1 for the full
+# sweep (CI / pre-release / after touching a generator or verify.py).
+SEEDS = 1000 if os.environ.get("FORGE_FULL_FUZZ") == "1" else 250
 
 # Subskills whose entire reachable output space (at "medium" difficulty,
 # which this file's 100-seed fuzz uses) is smaller than the generic 50%
@@ -156,3 +162,63 @@ def test_question_bodies_use_display_fractions(key):
         q = gen(random.Random(seed), difficulty).question_latex
         if inline.search(q):
             pytest.fail(f"{key} seed {seed}: inline \\frac in question body {q!r}")
+
+
+# Generators that legitimately cannot have their printed answer key
+# corruption-tested this way. Kept empty on purpose: fix 2 made the printed
+# key validated for every registered generator, so nothing needs to be here.
+# If a generator is ever added whose printed key truly can't be checked, it
+# must be listed here with a comment justifying why -- silence is never the
+# default.
+ALLOW_UNVALIDATED_KEY: set = set()
+
+
+@pytest.mark.parametrize("key", _keys())
+def test_corrupted_answer_latex_is_caught(key):
+    """A plainly wrong printed key must fail verification for every generator.
+
+    Mirrors probe_key.py: generate one valid problem, corrupt only
+    `answer_latex` (never `answer_expr`), and assert verification catches it.
+    """
+    if key in ALLOW_UNVALIDATED_KEY:
+        pytest.skip("explicitly allow-listed -- see ALLOW_UNVALIDATED_KEY")
+    gen = all_generators()[key]
+    p = gen(random.Random(0), "medium")
+    verify_problem(p)  # sanity: the untouched problem must verify clean
+    bad = dataclasses.replace(p, answer_latex="$99999$")
+    with pytest.raises(VerificationError):
+        verify_problem(bad)
+
+
+_INEQ_SYMBOL_FLIP = {"<": ">", ">": "<", r"\le": r"\ge", r"\ge": r"\le"}
+_INEQ_SYMBOL = re.compile(r"\\ge|\\le|<|>")
+
+
+def test_inequality_wrong_direction_key_is_caught():
+    """A printed key stating the opposite inequality direction must fail."""
+    from forge.generators import inequalities as ineq
+
+    p = ineq.one_step(random.Random(1), "hard")
+    verify_problem(p)  # sanity
+    m = _INEQ_SYMBOL.search(p.answer_latex)
+    assert m, f"no relation symbol in {p.answer_latex!r}"
+    bad_latex = p.answer_latex[: m.start()] + _INEQ_SYMBOL_FLIP[m.group()] + p.answer_latex[m.end() :]
+    bad = dataclasses.replace(p, answer_latex=bad_latex)
+    with pytest.raises(VerificationError):
+        verify_problem(bad)
+
+
+def test_inequality_shifted_boundary_key_is_caught():
+    """A printed key with the boundary shifted by +1 must fail."""
+    from forge.generators import inequalities as ineq
+
+    p = ineq.two_step(random.Random(2), "hard")
+    verify_problem(p)  # sanity
+    nums = list(re.finditer(r"-?\d+", p.answer_latex))
+    assert nums, f"no integer boundary in {p.answer_latex!r}"
+    last = nums[-1]
+    shifted = str(int(last.group()) + 1)
+    bad_latex = p.answer_latex[: last.start()] + shifted + p.answer_latex[last.end() :]
+    bad = dataclasses.replace(p, answer_latex=bad_latex)
+    with pytest.raises(VerificationError):
+        verify_problem(bad)

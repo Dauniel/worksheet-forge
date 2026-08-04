@@ -139,4 +139,6 @@ python -m forge build specs/placement_algebra1.yaml --seed 42
 python -m forge build specs/placement_algebra1.yaml --versions 3
 python -m forge build specs/placement_algebra1.yaml --seed 1 --no-pdf --no-history
 pytest
+FORGE_FULL_FUZZ=1 pytest tests/test_generators.py   # full 1000-seed sweep (~8 min); default SEEDS=250 for local iteration
+# PowerShell: $env:FORGE_FULL_FUZZ=1; pytest tests/test_generators.py
 ```

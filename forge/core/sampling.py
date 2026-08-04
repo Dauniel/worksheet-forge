@@ -69,7 +69,7 @@ class Ledger:
             try:
                 data = json.loads(self.path.read_text() or "{}")
                 self.runs = list(data.get("runs", []))
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, OSError, UnicodeDecodeError, ValueError):
                 warnings.warn(f"corrupt ledger at {self.path}; starting fresh")
 
     @property

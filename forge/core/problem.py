@@ -18,6 +18,7 @@ def normalize(question_latex: str) -> str:
     """
     s = question_latex.strip()
     s = s.replace("$", " ")
+    s = s.replace(r"\dfrac", r"\frac")  # display vs inline fractions are the same problem
     s = re.sub(r"\\[,;:!]", " ", s)  # latex spacing macros
     s = re.sub(r"\s+", "", s)
     return s

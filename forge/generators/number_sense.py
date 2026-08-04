@@ -77,5 +77,5 @@ def classify(rng: random.Random, difficulty: str) -> Problem:
         topic="number_sense",
         subskill="classify",
         difficulty=difficulty,
-        verify={"kind": "classify", "answer_check": None},
+        verify={"kind": "classify"},
     )
