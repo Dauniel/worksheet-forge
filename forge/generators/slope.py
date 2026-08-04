@@ -12,7 +12,7 @@ from fractions import Fraction
 
 import sympy as sp
 
-from ..core.latexfmt import coeff, linear, num, terms
+from ..core.latexfmt import coeff, dnum, linear, num, terms
 from ..core.problem import Problem
 from ..core.registry import register
 from ..core.sampling import distinct, nonzero_int, pick
@@ -151,7 +151,9 @@ def point_slope_to_equation(rng: random.Random, difficulty: str) -> Problem:
     (x1, y1), _ = _points(rng, m, difficulty, b)
     ms = sp.Rational(m.numerator, m.denominator)
     return Problem(
-        question_latex=f"$m = {sp.latex(ms)}$ through $({x1}, {y1})$",
+        # dnum, not sp.latex: a question body is display-style, and a fractional
+        # slope printed with inline \frac renders shrunken beside the point.
+        question_latex=f"$m = {dnum(m)}$ through $({x1}, {y1})$",
         answer_latex=f"$y = {linear(m, b)}$",
         answer_expr=(ms, sp.Integer(b)),
         topic="slope",

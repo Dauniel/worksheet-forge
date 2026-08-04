@@ -137,20 +137,22 @@ def test_no_hardcoded_problem_lists(key):
 
 
 @pytest.mark.parametrize("key", _keys())
-def test_question_bodies_do_not_mix_fraction_sizes(key):
-    r"""One line must not carry both a \dfrac and a \frac.
+def test_question_bodies_use_display_fractions(key):
+    r"""A question body may not contain an inline \frac at all.
 
-    Question bodies are display-style, so every fraction on the line has to
-    be \dfrac. Mixing renders a full-size coefficient beside a shrunken
-    constant -- e.g. ``-2x + 5 \ge -\dfrac{1}{3}x - \frac{10}{3}``, which
-    shipped on a worksheet before latexfmt.linear/poly scaled the constant
-    along with the variable term. Answer keys are exempt: CLAUDE.md keeps
-    them on inline \frac by convention.
+    Question bodies are display-style, so every fraction in one has to be
+    \dfrac. This started as a narrower check for lines mixing \dfrac with
+    \frac, which let a second bug ship: a body whose *only* fraction was
+    inline is uniformly shrunken, mixes nothing, and passed -- e.g.
+    ``9x - 10 = -\frac{13}{4}`` reached a worksheet with the fraction set at
+    footnote size. Any inline \frac is the defect; mixing is just the loudest
+    symptom. Answer keys are exempt: CLAUDE.md keeps them on \frac by
+    convention.
     """
     inline = re.compile(r"(?<!d)\\frac")
     gen = all_generators()[key]
     for seed in range(SEEDS):
         difficulty = DIFFICULTIES[seed % len(DIFFICULTIES)]
         q = gen(random.Random(seed), difficulty).question_latex
-        if r"\dfrac" in q and inline.search(q):
-            pytest.fail(f"{key} seed {seed}: mixed fraction sizes in {q!r}")
+        if inline.search(q):
+            pytest.fail(f"{key} seed {seed}: inline \\frac in question body {q!r}")

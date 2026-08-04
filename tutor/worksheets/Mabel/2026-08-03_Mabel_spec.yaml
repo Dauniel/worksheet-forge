@@ -23,8 +23,9 @@ sections:
     columns: 2
     problems:
       - {topic: linear_equations, subskill: two_step, count: 5, difficulty: medium}
-      - {topic: linear_equations, subskill: with_distribution, count: 5, difficulty: medium}
-      - {topic: linear_equations, subskill: multi_step_both_sides, count: 5, difficulty: hard}
+      - {topic: linear_equations, subskill: with_distribution, count: 4, difficulty: medium}
+      - {topic: linear_equations, subskill: multi_step_both_sides, count: 4, difficulty: hard}
+      - {topic: linear_equations, subskill: proportion, count: 2, difficulty: medium}
 
   - name: "Part D: Linear Inequalities"
     directions: "Solve each inequality for $x$. Remember to reverse the inequality sign when you multiply or divide by a negative number."

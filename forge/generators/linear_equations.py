@@ -60,7 +60,9 @@ def two_step(rng: random.Random, difficulty: str) -> Problem:
     m = nonzero_int(rng, 2, hi)
     b = nonzero_int(rng, -hi, hi)
     # rhs derived from the chosen solution, so it is exact by construction.
-    return _mk(linear(m, b), num(m * x_sol + b), x_sol, "two_step", difficulty)
+    # dnum, not num: _solution can return a fraction, and a question body is
+    # display-style -- an inline \frac renders shrunken next to the equation.
+    return _mk(linear(m, b), dnum(m * x_sol + b), x_sol, "two_step", difficulty)
 
 
 @register("linear_equations", "multi_step_both_sides")
@@ -73,8 +75,10 @@ def multi_step_both_sides(rng: random.Random, difficulty: str) -> Problem:
         m2 = nonzero_int(rng, -hi, hi)
     b1 = nonzero_int(rng, -hi, hi)
     b2 = (m1 - m2) * x_sol + b1
+    # b2 carries the fraction when x_sol is fractional, so render display-style.
     return _mk(
-        linear(m1, b1), linear(m2, b2), x_sol, "multi_step_both_sides", difficulty
+        linear(m1, b1, display=True), linear(m2, b2, display=True),
+        x_sol, "multi_step_both_sides", difficulty,
     )
 
 
@@ -130,7 +134,12 @@ def proportion(rng: random.Random, difficulty: str) -> Problem:
         # in lowest terms matching the left denominator.
         a = nonzero_int(rng, 1, min(hi, 9))
         d = pick(rng, NICE_DENOMS)
+        # p/q below is always n/d scaled, so a radicand-free n divisible by d
+        # would print a right side that reduces to a whole number (8/8 = 1),
+        # collapsing the cross-multiplication into a one-step equation.
         n = nonzero_int(rng, -hi, hi)  # numerator of the left side
+        while n % d == 0:
+            n = nonzero_int(rng, -hi, hi)
         b = n - a * x_sol
         s = pick(rng, (1, 2, 3))
         p, q = n * s, d * s
@@ -139,7 +148,10 @@ def proportion(rng: random.Random, difficulty: str) -> Problem:
     elif style == 1:
         # p / x = a / q  (x sits in a denominator)
         q = pick(rng, (2, 3, 4, 5, 6))
+        # Same trap on this side: a divisible by q prints 4/2 or 6/6.
         a = nonzero_int(rng, 1, min(hi, 9))
+        while a % q == 0:
+            a = nonzero_int(rng, 1, min(hi, 9))
         p = nonzero_int(rng, -min(hi, 9), min(hi, 9))
         x_sol = Fraction(p * q, a)
         lhs = rf"\dfrac{{{p}}}{{x}}"
