@@ -308,6 +308,10 @@ CATALOG: Dict[str, dict] = {
             _s("solve_basic", "medium", columns=2),
             _s("solve_with_coefficient", "hard", columns=2),
             _s("multi_step", "hard", columns=2),
+            _s("solve_inequality", "hard",
+               group="Absolute Value Inequalities",
+               directions="Solve each inequality for $x$.",
+               workspace="1.8cm", columns=2),
         ],
     },
     "unit_rates": {
@@ -373,6 +377,68 @@ CATALOG: Dict[str, dict] = {
                group="Multiplying Rational Expressions",
                directions="Multiply and simplify each expression.",
                workspace="1.8cm", columns=2),
+        ],
+    },
+    "polynomials": {
+        "name": "Polynomials",
+        "directions": "Multiply each pair of binomials.",
+        "workspace": "1.6cm",
+        "progression": [
+            _s("multiply_binomials", "easy", columns=2),
+            _s("factor_trinomial", "medium",
+               group="Factoring Trinomials",
+               directions="Factor each trinomial completely.",
+               workspace="1.6cm", columns=2),
+            _s("difference_of_squares", "medium",
+               group="Factoring a Difference of Squares",
+               directions="Factor each expression completely.",
+               workspace="1.6cm", columns=2),
+        ],
+    },
+    "variation": {
+        "name": "Direct and Inverse Variation",
+        "directions": "Solve each variation problem.",
+        "workspace": "2.0cm",
+        "progression": [
+            _s("direct_variation", "easy", columns=1),
+            _s("inverse_variation", "medium",
+               group="Inverse Variation",
+               directions="Solve each variation problem.",
+               workspace="2.0cm", columns=1),
+        ],
+    },
+    "radical_equations": {
+        "name": "Radical Equations",
+        "directions": "Solve each equation for $x$.",
+        "workspace": "2.2cm",
+        "progression": [
+            _s("basic", "easy", columns=2),
+            _s("multi_step", "medium",
+               group="Isolating the Radical",
+               directions="Solve each equation for $x$. Isolate the radical first.",
+               workspace="2.2cm", columns=2),
+            _s("check_extraneous", "hard",
+               group="Checking for Extraneous Solutions",
+               directions=(
+                   "Solve each equation for $x$. Check your solution in the "
+                   "original equation and reject it if it does not work."
+               ),
+               workspace="2.2cm", columns=2),
+        ],
+    },
+    "graphing": {
+        "name": "Graphing Linear Inequalities",
+        "directions": "Determine whether the given point is a solution. Answer Yes or No.",
+        "workspace": "1.0cm",
+        "progression": [
+            _s("point_in_solution", "easy", columns=1),
+            _s("system_point_in_solution", "medium",
+               group="Systems of Inequalities",
+               directions=(
+                   "Determine whether the given point is a solution to the system. "
+                   "Answer Yes or No."
+               ),
+               workspace="1.0cm", columns=1),
         ],
     },
 }

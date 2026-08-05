@@ -21,6 +21,7 @@ from ..core.sampling import nonzero_int
 X = sp.Symbol("x")
 RANGES = {"easy": (1, 9), "medium": (2, 14), "hard": (3, 18)}
 EVAL_HI = {"easy": 9, "medium": 14, "hard": 20}
+INEQ_HI = {"easy": (1, 9), "medium": (2, 12), "hard": (2, 15)}
 
 
 def _same_parity_pair(rng: random.Random, hi: int) -> tuple[int, int]:
@@ -131,4 +132,41 @@ def evaluate(rng: random.Random, difficulty: str) -> Problem:
         subskill="evaluate",
         difficulty=difficulty,
         verify={"kind": "evaluate"},
+    )
+
+
+@register("absolute_value", "solve_inequality")
+def solve_inequality(rng: random.Random, difficulty: str) -> Problem:
+    """``|a x + b| REL c`` (``a > 0``), with ``b`` and ``c`` chosen as
+    multiples of ``a`` so the solution boundaries are always clean integers,
+    never a fraction.
+    """
+    _, hi = INEQ_HI[difficulty]
+    a = rng.randint(1, 3) if difficulty != "easy" else 1
+    p = nonzero_int(rng, -hi, hi)
+    q = rng.randint(1, hi)
+    b, c = a * p, a * q
+    rel = rng.choice(("<", "<=", ">", ">="))
+    rel_latex = {"<": "<", "<=": r"\le", ">": ">", ">=": r"\ge"}[rel]
+
+    lo, hi_bound = -(p + q), q - p  # both plain integers by construction
+    body = linear(a, b)
+    question = f"|{body}| {rel_latex} {c}"
+
+    if rel in ("<", "<="):
+        cmp = "<" if rel == "<" else r"\le"
+        answer = f"{lo} {cmp} x {cmp} {hi_bound}"
+    else:
+        lt = "<" if rel == ">" else r"\le"
+        gt = ">" if rel == ">" else r"\ge"
+        answer = rf"x {lt} {lo} \text{{ or }} x {gt} {hi_bound}"
+
+    return Problem(
+        question_latex=f"${question}$",
+        answer_latex=f"${answer}$",
+        answer_expr=None,
+        topic="absolute_value",
+        subskill="solve_inequality",
+        difficulty=difficulty,
+        verify={"kind": "abs_inequality", "var": "x", "answer_check": None},
     )

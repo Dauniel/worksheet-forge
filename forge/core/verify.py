@@ -642,6 +642,109 @@ def _v_unit_price_comparison(p: Problem) -> None:
         )
 
 
+_COMPOUND = re.compile(r"(-?\d+)\s*(<=|\\le|<)\s*x\s*(<=|\\le|<)\s*(-?\d+)")
+
+
+def _v_abs_inequality(p: Problem) -> None:
+    """Re-derive the printed |...| inequality's solution set with sympy;
+    require the printed compound/union key to describe the same set."""
+    name = p.verify.get("var", "x")
+    var = sp.Symbol(name, real=True)
+    plain = sp.Symbol(name)
+
+    text = p.question_latex.strip().strip("$")
+    lhs_text, op, rhs_text = _split_relation(text)
+    lhs = latex_to_sympy(lhs_text).subs(plain, var)
+    rhs = latex_to_sympy(rhs_text)
+    solved = sp.solve_univariate_inequality(_REL_CLASS[op](lhs, rhs), var, relational=False)
+
+    answer_text = p.answer_latex.strip().strip("$")
+    if r"\text{ or }" in answer_text:
+        rels = []
+        for part in answer_text.split(r"\text{ or }"):
+            plhs, pop, prhs = _split_relation(part.strip())
+            rels.append(_REL_CLASS[pop](latex_to_sympy(plhs).subs(plain, var), latex_to_sympy(prhs)))
+        if len(rels) != 2:
+            raise VerificationError(f"{p.topic}/{p.subskill}: cannot read key {p.answer_latex!r}")
+        # solve_univariate_inequality only accepts a single relation, not an
+        # Or() of two -- solve each piece separately and union the results.
+        printed_solved = sp.Union(
+            *(sp.solve_univariate_inequality(r, var, relational=False) for r in rels)
+        )
+    else:
+        m = _COMPOUND.match(answer_text)
+        if not m:
+            raise VerificationError(f"{p.topic}/{p.subskill}: cannot read key {p.answer_latex!r}")
+        lo, op1, op2, hi_v = m.group(1), m.group(2), m.group(3), m.group(4)
+        printed_solved = sp.Interval(
+            sp.Integer(lo), sp.Integer(hi_v), left_open=(op1 == "<"), right_open=(op2 == "<")
+        )
+
+    if printed_solved != solved:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} has solution set {solved}, "
+            f"but printed key {p.answer_latex!r} reads as {printed_solved}"
+        )
+
+
+def _v_point_in_inequality(p: Problem) -> None:
+    """Independently evaluate whether the printed point satisfies the
+    printed inequality; require the printed Yes/No key to agree."""
+    text = p.question_latex
+    ineq_part = text.split(";", 1)[0].strip().strip("$")
+    _lhs_text, op, rhs_text = _split_relation(ineq_part)
+    x = sp.Symbol("x")
+    rhs = latex_to_sympy(rhs_text)
+    pts = _POINT.findall(text)
+    if len(pts) != 1:
+        raise VerificationError(f"{p.topic}/{p.subskill}: expected 1 point in {text!r}")
+    px, py = sp.Integer(pts[0][0]), sp.Integer(pts[0][1])
+    is_sol = bool(_REL_CLASS[op](py, rhs.subs(x, px)))
+
+    answer_text = p.answer_latex.strip().strip("$")
+    expected = "Yes" if is_sol else "No"
+    if answer_text != expected:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: point ({px}, {py}) {'is' if is_sol else 'is not'} "
+            f"a solution of {ineq_part}, but key says {answer_text!r}"
+        )
+
+
+def _v_system_point_in_inequality(p: Problem) -> None:
+    """Same as :func:`_v_point_in_inequality`, but the point must satisfy
+    both printed inequalities in a ``\\begin{cases}`` block."""
+    text = p.question_latex
+    ineq_part = text.split(";", 1)[0]
+    m = _CASES.search(ineq_part)
+    if not m:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no cases block in {ineq_part!r}")
+    parts = [e.strip() for e in m.group(1).split(r"\\") if e.strip()]
+    if len(parts) != 2:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: expected 2 inequalities in {ineq_part!r}"
+        )
+    x = sp.Symbol("x")
+    pts = _POINT.findall(text)
+    if len(pts) != 1:
+        raise VerificationError(f"{p.topic}/{p.subskill}: expected 1 point in {text!r}")
+    px, py = sp.Integer(pts[0][0]), sp.Integer(pts[0][1])
+
+    results = []
+    for part in parts:
+        _lhs_text, op, rhs_text = _split_relation(part)
+        boundary = latex_to_sympy(rhs_text).subs(x, px)
+        results.append(bool(_REL_CLASS[op](py, boundary)))
+    is_sol = all(results)
+
+    answer_text = p.answer_latex.strip().strip("$")
+    expected = "Yes" if is_sol else "No"
+    if answer_text != expected:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: point ({px}, {py}) {'is' if is_sol else 'is not'} "
+            f"a solution of the system, but key says {answer_text!r}"
+        )
+
+
 _CASES = re.compile(r"\\begin\{cases\}(.*?)\\end\{cases\}", re.S)
 
 
@@ -911,6 +1014,9 @@ STRATEGIES = {
     "quadratic_vertex": _v_quadratic_vertex,
     "simplify_rational": _v_simplify_rational,
     "multiply_rational": _v_multiply_rational,
+    "abs_inequality": _v_abs_inequality,
+    "point_in_inequality": _v_point_in_inequality,
+    "system_point_in_inequality": _v_system_point_in_inequality,
 }
 
 

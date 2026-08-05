@@ -88,9 +88,15 @@ bug), `3` LaTeX failed.
 `negatives`, `fractions`, `like_terms`, `linear_equations`, `slope`,
 `ratios_percents`, `exponents`, `inequalities`, `word_problems`,
 `number_sense`, `roots`, `geometry`, `percent_apps`, `absolute_value`,
-`unit_rates`, `systems`, `quadratics`, `rational_expressions` — 75
+`unit_rates`, `systems`, `quadratics`, `rational_expressions`,
+`polynomials`, `variation`, `radical_equations`, `graphing` — 86
 generators in total. Run `python -m forge topics` for the current list with
 subskills.
+
+`graphing` is scoped to point-testing (`is $(x, y)$ a solution?`), not shaded
+regions -- a printed worksheet is graphed by hand, so there is no pixel
+output to verify against. Point-testing is checkable and covers the same
+"which side of the line" reasoning a student needs.
 
 ## Design
 
