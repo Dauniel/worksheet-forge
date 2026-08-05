@@ -110,6 +110,7 @@ def build(
     label: str = "",
     ledger: Optional[Ledger] = None,
     make_pdf: bool = True,
+    allow_download: bool = True,
 ) -> dict:
     spec = load_spec(spec_path)
     ws = generate(spec, seed, ledger=ledger)
@@ -124,7 +125,9 @@ def build(
         tex_path.write_text(source)
         paths[f"{kind}_tex"] = tex_path
         if make_pdf:
-            paths[f"{kind}_pdf"] = compile_pdf(source, out_dir / f"{stem}_{kind}.pdf")
+            paths[f"{kind}_pdf"] = compile_pdf(
+                source, out_dir / f"{stem}_{kind}.pdf", allow_download=allow_download
+            )
 
     if ledger is not None:
         ledger.record(p.fingerprint for p in ws.problems)

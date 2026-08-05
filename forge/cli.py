@@ -38,6 +38,7 @@ def _run(args: argparse.Namespace, spec_path: Path) -> int:
             label=label,
             ledger=ledger,
             make_pdf=not args.no_pdf,
+            allow_download=not args.no_download,
         )
         ws = paths["worksheet"]
         tag = f"version {label} " if label else ""
@@ -94,6 +95,8 @@ def _add_common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--no-history", action="store_true",
                    help="ignore and do not update the anti-repeat ledger")
     p.add_argument("--no-pdf", action="store_true", help="emit .tex only")
+    p.add_argument("--no-download", action="store_true",
+                   help="never auto-download a LaTeX compiler; fail if none is found")
 
 
 def main(argv=None) -> int:

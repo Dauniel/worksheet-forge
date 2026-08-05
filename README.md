@@ -21,8 +21,15 @@ and a clean student copy containing no answer content at all.
 pip install -e .
 ```
 
-Requires sympy, Jinja2, PyYAML, and a TeX distribution providing `pdflatex`
-(MacTeX, TeX Live, or TinyTeX).
+No separate LaTeX install required. If you already have a TeX distribution
+(MacTeX, TeX Live, MiKTeX) on PATH, `pdflatex` is used automatically. If not,
+the first PDF build downloads [Tectonic](https://tectonic-typesetting.github.io/)
+— a small, self-contained LaTeX engine — into a local cache (`~/.cache/worksheet-forge/bin`,
+or `%LOCALAPPDATA%\worksheet-forge\bin` on Windows) and uses that from then on.
+
+Pass `--no-download` (or set `WORKSHEET_FORGE_NO_DOWNLOAD=1`) to disable the
+auto-download, e.g. in offline CI — the build then fails if no compiler is
+found on PATH, rather than reaching out to the network.
 
 ## Use
 
@@ -71,6 +78,7 @@ Subskill quotas are enforced, not sampled: a section asking for 5 gets exactly
 | `--lookback N` | Reject problems used in the last N runs (default 5) |
 | `--no-history` | Ignore and don't update the anti-repeat ledger |
 | `--no-pdf` | Emit `.tex` only |
+| `--no-download` | Never auto-download a LaTeX compiler; fail if none is found on PATH |
 
 Exit codes: `1` bad request, `2` an answer failed verification (a generator
 bug), `3` LaTeX failed.

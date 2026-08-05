@@ -10,6 +10,8 @@ from typing import List
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
+from .texcompiler import DownloadError, resolve_compiler
+
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE_DIR = ROOT / "templates"
 
@@ -87,13 +89,20 @@ def render_tex(
     )
 
 
-def compile_pdf(tex_source: str, out_pdf: Path) -> Path:
-    """Compile with pdflatex (twice, for the page-count in the footer)."""
-    if shutil.which("pdflatex") is None:
+def compile_pdf(tex_source: str, out_pdf: Path, allow_download: bool = True) -> Path:
+    """Compile to PDF with pdflatex or tectonic, whichever is resolved.
+
+    pdflatex needs two passes for the page-count in the footer; tectonic
+    reruns itself internally as needed, so one invocation is enough.
+    """
+    try:
+        kind, exe = resolve_compiler(allow_download=allow_download)
+    except DownloadError as e:
         raise LatexError(
-            "pdflatex not found on PATH. Install a TeX distribution (MacTeX/TeX Live) "
+            f"{e} Install a TeX distribution (MacTeX/TeX Live/MiKTeX) manually, "
             "or run with --no-pdf to emit .tex only."
-        )
+        ) from e
+
     out_pdf = Path(out_pdf)
     out_pdf.parent.mkdir(parents=True, exist_ok=True)
     stem = out_pdf.stem
@@ -101,20 +110,22 @@ def compile_pdf(tex_source: str, out_pdf: Path) -> Path:
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         (tmp / f"{stem}.tex").write_text(tex_source)
-        for _ in range(2):
-            proc = subprocess.run(
-                ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", f"{stem}.tex"],
-                cwd=tmp,
-                capture_output=True,
-                text=True,
-            )
+
+        if kind == "pdflatex":
+            cmds = [[exe, "-interaction=nonstopmode", "-halt-on-error", f"{stem}.tex"]] * 2
+        else:
+            cmds = [[exe, "-o", str(tmp), str(tmp / f"{stem}.tex")]]
+
+        for cmd in cmds:
+            proc = subprocess.run(cmd, cwd=tmp, capture_output=True, text=True)
             if proc.returncode != 0:
-                log = (tmp / f"{stem}.log")
+                log = tmp / f"{stem}.log"
                 tail = log.read_text(errors="replace")[-3000:] if log.exists() else proc.stdout[-3000:]
+                stderr_tail = proc.stderr[-3000:] if proc.stderr else ""
                 (out_pdf.parent / f"{stem}.failed.tex").write_text(tex_source)
                 raise LatexError(
-                    f"pdflatex failed for {stem}. Source kept at "
-                    f"{out_pdf.parent / f'{stem}.failed.tex'}\n{tail}"
+                    f"{kind} failed for {stem}. Source kept at "
+                    f"{out_pdf.parent / f'{stem}.failed.tex'}\n{tail}{stderr_tail}"
                 )
         shutil.copy(tmp / f"{stem}.pdf", out_pdf)
     return out_pdf
