@@ -6,6 +6,7 @@ import argparse
 import random
 import string
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import yaml
@@ -19,6 +20,13 @@ from .core.verify import VerificationError
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _resolve_out(args: argparse.Namespace) -> Path:
+    """Each run gets its own out/<timestamp>/ folder unless --out is given."""
+    if args.out:
+        return Path(args.out)
+    return ROOT / "out" / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+
 def _run(args: argparse.Namespace, spec_path: Path) -> int:
     ledger = (
         NullLedger()
@@ -26,6 +34,7 @@ def _run(args: argparse.Namespace, spec_path: Path) -> int:
         else Ledger(path=Path(args.history), lookback=args.lookback)
     )
     base_seed = args.seed if args.seed is not None else random.randrange(1, 10**9)
+    out_dir = _resolve_out(args)
 
     for i in range(args.versions):
         # Fully independent draws per version: a distinct seed, nothing shared.
@@ -34,7 +43,7 @@ def _run(args: argparse.Namespace, spec_path: Path) -> int:
         paths = build(
             spec_path=spec_path,
             seed=seed,
-            out_dir=Path(args.out),
+            out_dir=out_dir,
             label=label,
             ledger=ledger,
             make_pdf=not args.no_pdf,
@@ -66,7 +75,8 @@ def _quick_cmd(args: argparse.Namespace) -> int:
         difficulty=args.difficulty or "",
     )
 
-    out_dir = Path(args.out)
+    out_dir = _resolve_out(args)
+    args.out = str(out_dir)  # so _run resolves to this same folder, not a new timestamp
     out_dir.mkdir(parents=True, exist_ok=True)
     # The generated spec is written out so a good worksheet can be rebuilt,
     # edited, or committed later.
@@ -88,7 +98,8 @@ def _topics_cmd(args: argparse.Namespace) -> int:
 def _add_common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--seed", type=int, default=None, help="seed (random if omitted)")
     p.add_argument("--versions", type=int, default=1, help="number of A/B/C variants")
-    p.add_argument("--out", default=str(ROOT / "out"))
+    p.add_argument("--out", default="",
+                   help="output directory (default: a fresh out/<timestamp>/ per run)")
     p.add_argument("--history", default=str(DEFAULT_HISTORY))
     p.add_argument("--lookback", type=int, default=DEFAULT_LOOKBACK,
                    help="reject fingerprints used in the last N runs")
