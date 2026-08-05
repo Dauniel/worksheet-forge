@@ -86,7 +86,9 @@ bug), `3` LaTeX failed.
 ## Topics
 
 `negatives`, `fractions`, `like_terms`, `linear_equations`, `slope`,
-`ratios_percents`, `exponents`, `inequalities`, `word_problems` — 26
+`ratios_percents`, `exponents`, `inequalities`, `word_problems`,
+`number_sense`, `roots`, `geometry`, `percent_apps`, `absolute_value`,
+`unit_rates`, `systems`, `quadratics`, `rational_expressions` — 75
 generators in total. Run `python -m forge topics` for the current list with
 subskills.
 

@@ -322,6 +322,59 @@ CATALOG: Dict[str, dict] = {
                workspace="2.0cm", columns=1),
         ],
     },
+    "systems": {
+        "name": "Systems of Linear Equations",
+        "directions": "Solve each system of equations.",
+        "workspace": "2.4cm",
+        "progression": [
+            _s("substitution", "easy",
+               group="Solving by Substitution",
+               directions="Solve each system by substitution.",
+               workspace="2.4cm", columns=1),
+            _s("elimination", "medium",
+               group="Solving by Elimination",
+               directions="Solve each system by elimination.",
+               workspace="2.4cm", columns=1),
+            _s("classify", "hard",
+               group="Classifying Systems",
+               directions=(
+                   "State whether each system has one solution, no solution, or "
+                   "infinitely many. If there is one solution, give it as a point."
+               ),
+               workspace="2.4cm", columns=1),
+        ],
+    },
+    "quadratics": {
+        "name": "Quadratic Equations",
+        "directions": "Solve each equation for $x$.",
+        "workspace": "2.4cm",
+        "progression": [
+            _s("solve_by_factoring", "easy",
+               group="Solving by Factoring",
+               directions="Solve each equation by factoring.",
+               workspace="2.2cm", columns=2),
+            _s("quadratic_formula", "medium",
+               group="The Quadratic Formula",
+               directions="Solve each equation using the quadratic formula.",
+               workspace="2.8cm", columns=2),
+            _s("find_vertex", "medium",
+               group="Vertex of a Parabola",
+               directions="Find the vertex of each parabola.",
+               workspace="1.8cm", columns=2),
+        ],
+    },
+    "rational_expressions": {
+        "name": "Rational Expressions",
+        "directions": "Simplify each expression. State any excluded values.",
+        "workspace": "1.8cm",
+        "progression": [
+            _s("simplify", "easy", columns=2),
+            _s("multiply", "medium",
+               group="Multiplying Rational Expressions",
+               directions="Multiply and simplify each expression.",
+               workspace="1.8cm", columns=2),
+        ],
+    },
 }
 
 PART_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

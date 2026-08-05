@@ -642,6 +642,238 @@ def _v_unit_price_comparison(p: Problem) -> None:
         )
 
 
+_CASES = re.compile(r"\\begin\{cases\}(.*?)\\end\{cases\}", re.S)
+
+
+def _parse_system(question_latex: str):
+    """Pull the two equations out of a printed ``\\begin{cases}...\\end{cases}``
+    block and return them as sympy ``Eq`` objects -- re-derived from the
+    printed text, never from anything the generator stored."""
+    m = _CASES.search(question_latex)
+    if not m:
+        raise VerificationError(f"no cases block found in {question_latex!r}")
+    parts = [e.strip() for e in m.group(1).split(r"\\") if e.strip()]
+    if len(parts) != 2:
+        raise VerificationError(
+            f"expected 2 equations in {question_latex!r}, found {len(parts)}"
+        )
+    eqs = []
+    for part in parts:
+        if "=" not in part:
+            raise VerificationError(f"no '=' in system equation {part!r}")
+        lhs_t, rhs_t = part.split("=", 1)
+        eqs.append(sp.Eq(latex_to_sympy(lhs_t), latex_to_sympy(rhs_t)))
+    return eqs
+
+
+def _v_solve_system(p: Problem) -> None:
+    """Re-solve the printed system with ``linsolve`` and require the keyed point."""
+    x, y = sp.symbols("x y")
+    eqs = _parse_system(p.question_latex)
+    sol = sp.linsolve(eqs, x, y)
+    if len(sol) != 1:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} has {len(sol)} solution(s), expected 1"
+        )
+    (xv, yv), = sol
+    if xv.free_symbols or yv.free_symbols:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} is a dependent system, "
+            "not a unique solution"
+        )
+    exp_x, exp_y = p.answer_expr
+    if not (_equal(xv, exp_x) and _equal(yv, exp_y)):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} solves to ({xv}, {yv}), "
+            f"key says ({exp_x}, {exp_y})"
+        )
+    xm = re.search(r"x\s*=\s*([^,\$]+)", p.answer_latex)
+    ym = re.search(r"y\s*=\s*([^\$]+)", p.answer_latex)
+    if not xm or not ym:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read x/y from {p.answer_latex!r}")
+    printed_x = latex_to_sympy(xm.group(1))
+    printed_y = latex_to_sympy(ym.group(1))
+    if not (_equal(printed_x, xv) and _equal(printed_y, yv)):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed key {p.answer_latex!r} states "
+            f"({printed_x}, {printed_y}), re-derived is ({xv}, {yv})"
+        )
+
+
+def _v_classify_system(p: Problem) -> None:
+    """Re-classify the printed system with ``linsolve``; require the printed
+    key to name the same case (and, for a unique solution, the same point)."""
+    x, y = sp.symbols("x y")
+    eqs = _parse_system(p.question_latex)
+    sol = sp.linsolve(eqs, x, y)
+    text = p.answer_latex
+
+    if len(sol) == 0:
+        if "No solution" not in text:
+            raise VerificationError(
+                f"{p.topic}/{p.subskill}: {p.question_latex} has no solution, "
+                f"but key says {text!r}"
+            )
+        return
+    (xv, yv), = sol
+    if xv.free_symbols or yv.free_symbols:
+        if "Infinitely" not in text:
+            raise VerificationError(
+                f"{p.topic}/{p.subskill}: {p.question_latex} has infinitely many "
+                f"solutions, but key says {text!r}"
+            )
+        return
+    if "One solution" not in text:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} has exactly one solution "
+            f"({xv}, {yv}), but key says {text!r}"
+        )
+    pts = _POINT.findall(text)
+    if len(pts) != 1:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read point from {text!r}")
+    px, py = sp.Integer(pts[0][0]), sp.Integer(pts[0][1])
+    if not (_equal(px, xv) and _equal(py, yv)):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: key states point ({px}, {py}), re-derived is ({xv}, {yv})"
+        )
+
+
+def _v_solve_quadratic(p: Problem) -> None:
+    """Re-solve the printed ``... = 0`` and require exactly the keyed roots."""
+    text = p.question_latex.strip().strip("$")
+    if "=" not in text:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no '=' in {p.question_latex!r}")
+    lhs_t, rhs_t = text.split("=", 1)
+    var = sp.Symbol(p.verify.get("var", "x"))
+    sols = sorted(
+        sp.solve(sp.Eq(latex_to_sympy(lhs_t), latex_to_sympy(rhs_t)), var),
+        key=lambda s: sp.N(s),
+    )
+    if len(sols) != 2:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} has {len(sols)} solution(s), expected 2"
+        )
+    expected = sorted(p.answer_expr, key=lambda s: sp.N(s))
+    if not all(_equal(a, b) for a, b in zip(sols, expected)):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} solves to {sols}, key says {expected}"
+        )
+    parts = p.answer_latex.strip().strip("$").split(r"\text{ or }")
+    if len(parts) != 2:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot split key {p.answer_latex!r}")
+    printed = []
+    for part in parts:
+        mm = re.search(r"x\s*=\s*(.+)", part.strip())
+        if not mm:
+            raise VerificationError(f"{p.topic}/{p.subskill}: cannot read root from {part!r}")
+        printed.append(latex_to_sympy(mm.group(1)))
+    printed.sort(key=lambda s: sp.N(s))
+    if not all(_equal(a, b) for a, b in zip(sols, printed)):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed key {p.answer_latex!r} states {printed}, "
+            f"re-derived {sols}"
+        )
+
+
+def _v_quadratic_vertex(p: Problem) -> None:
+    """Recompute the vertex from the printed standard-form equation."""
+    text = p.question_latex.strip().strip("$")
+    if "=" not in text:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no '=' in {p.question_latex!r}")
+    x = sp.Symbol("x")
+    rhs = latex_to_sympy(text.split("=", 1)[1])
+    poly_ = sp.Poly(rhs, x)
+    if poly_.degree() != 2:
+        raise VerificationError(f"{p.topic}/{p.subskill}: {p.question_latex} is not quadratic")
+    a, b, _c = poly_.all_coeffs()
+    h = -b / (2 * a)
+    k = rhs.subs(x, h)
+    pts = _POINT.findall(p.answer_latex)
+    if len(pts) != 1:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read vertex from {p.answer_latex!r}")
+    ph, pk = sp.Integer(pts[0][0]), sp.Integer(pts[0][1])
+    if not (_equal(ph, h) and _equal(pk, k)):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: vertex should be ({h}, {k}), key says ({ph}, {pk})"
+        )
+
+
+def _rational_equal(a, b) -> bool:
+    """Equality for expressions that may be rational functions of x -- plain
+    ``_equal`` runs ``nsimplify``, which targets numeric values, not
+    expressions with a free variable."""
+    try:
+        return sp.simplify(sp.cancel(a - b)) == 0
+    except (TypeError, sp.SympifyError):
+        return False
+
+
+def _extract_fracs(text: str) -> list:
+    """Find every ``\\frac{...}{...}``/``\\dfrac{...}{...}`` in text, using the
+    balanced-brace matcher (not a flat regex) so a squared term's ``x^{2}``
+    inside the numerator doesn't truncate the match."""
+    out = []
+    for m in _FRAC.finditer(text):
+        numer, after = _match_group(text, m.end())
+        denom, _end = _match_group(text, after)
+        out.append((numer, denom))
+    return out
+
+
+def _v_simplify_rational(p: Problem) -> None:
+    """Cancel the printed fraction independently; require the same reduced
+    polynomial and the same excluded value(s) in the printed domain note."""
+    text = p.question_latex.strip().strip("$")
+    fracs = _extract_fracs(text)
+    if not fracs:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no fraction in {p.question_latex!r}")
+    x = sp.Symbol("x")
+    numer = latex_to_sympy(fracs[0][0])
+    denom = latex_to_sympy(fracs[0][1])
+    simplified = sp.cancel(numer / denom)
+    if sp.denom(simplified) != 1:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} does not reduce to a "
+            f"polynomial ({simplified})"
+        )
+    ans_text = p.answer_latex.strip().strip("$")
+    ans_expr_text, _, domain_text = ans_text.partition(",")
+    printed = latex_to_sympy(ans_expr_text)
+    if not _rational_equal(printed, simplified):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} simplifies to {simplified}, "
+            f"key says {printed}"
+        )
+    roots = sp.solve(sp.Eq(denom, 0), x)
+    printed_excl = {sp.Integer(v) for v in re.findall(r"x\s*\\neq\s*(-?\d+)", domain_text)}
+    if set(roots) != printed_excl:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: denominator is zero at {roots}, key excludes {printed_excl}"
+        )
+
+
+def _v_multiply_rational(p: Problem) -> None:
+    """Multiply and cancel the two printed fractions independently."""
+    text = p.question_latex.strip().strip("$")
+    fracs = _extract_fracs(text)
+    if len(fracs) != 2:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: expected 2 fractions in {p.question_latex!r}"
+        )
+    (n1, d1), (n2, d2) = fracs
+    numer = latex_to_sympy(n1) * latex_to_sympy(n2)
+    denom = latex_to_sympy(d1) * latex_to_sympy(d2)
+    simplified = sp.cancel(numer / denom)
+
+    ans_text = p.answer_latex.strip().strip("$")
+    printed = latex_to_sympy(ans_text)
+    if not _rational_equal(printed, simplified):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} simplifies to {simplified}, "
+            f"key says {printed}"
+        )
+
+
 STRATEGIES = {
     "evaluate": _v_evaluate,
     "simplify": _v_simplify,
@@ -673,6 +905,12 @@ STRATEGIES = {
     "tax_tip": _v_tax_tip,
     "unit_rate": _v_unit_rate,
     "unit_price_comparison": _v_unit_price_comparison,
+    "solve_system": _v_solve_system,
+    "classify_system": _v_classify_system,
+    "solve_quadratic": _v_solve_quadratic,
+    "quadratic_vertex": _v_quadratic_vertex,
+    "simplify_rational": _v_simplify_rational,
+    "multiply_rational": _v_multiply_rational,
 }
 
 
