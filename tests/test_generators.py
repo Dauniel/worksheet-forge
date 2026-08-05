@@ -65,6 +65,17 @@ SMALL_REACHABLE_SPACE = {
         "tier); brute-force enumeration gives exactly 32 distinct reachable "
         "radicands",
     ),
+    ("unit_circle", "degree_radian_conversion"): (
+        34,  # 17 "nice" angles (multiples of 30/45 up to 360) x 2 directions
+        "degrees/radians conversion is only ever asked for a fixed, small "
+        "catalog of standard angles -- there is no wider range to draw from, "
+        "and the reachable space doesn't grow with difficulty",
+    ),
+    ("unit_circle", "exact_trig_value"): (
+        46,  # 16 nice angles x 3 funcs, minus tan at 270 (undefined)
+        "exact trig values are only defined for the standard unit-circle "
+        "angles; the reachable space doesn't grow with difficulty",
+    ),
 }
 
 

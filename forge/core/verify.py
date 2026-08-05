@@ -977,6 +977,250 @@ def _v_multiply_rational(p: Problem) -> None:
         )
 
 
+def _complex_from_text(s: str) -> sp.Expr:
+    """Parse an "a + bi" / "a - bi" / "bi" / "a" fragment into a sympy
+    expression over ``I`` -- these generators only ever emit that shape, so a
+    literal ``i -> I`` swap (with a ``*`` inserted after a digit) is safe."""
+    s = s.strip().strip("$").replace("i", "I")
+    s = re.sub(r"(\d)I", r"\1*I", s)
+    return latex_to_sympy(s)
+
+
+def _v_complex_arith(p: Problem) -> None:
+    """Re-parse the two printed complex numbers and the operator; recompute
+    independently and require the same printed result."""
+    text = p.question_latex.strip().strip("$")
+    m = re.match(r"\((.+?)\)\s*([+\-])\s*\((.+?)\)$", text)
+    if m:
+        a = _complex_from_text(m.group(1))
+        c = _complex_from_text(m.group(3))
+        got = a + c if m.group(2) == "+" else a - c
+    else:
+        m = re.match(r"\((.+?)\)\((.+?)\)$", text)
+        if not m:
+            raise VerificationError(f"{p.topic}/{p.subskill}: cannot parse {p.question_latex!r}")
+        a = _complex_from_text(m.group(1))
+        c = _complex_from_text(m.group(2))
+        got = sp.expand(a * c)
+
+    printed = _complex_from_text(p.answer_latex)
+    if sp.simplify(got - printed) != 0:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} = {got}, key says {printed}"
+        )
+
+
+def _v_power_of_i(p: Problem) -> None:
+    m = re.search(r"i\^\{(\d+)\}", p.question_latex)
+    if not m:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read exponent from {p.question_latex!r}")
+    n = int(m.group(1))
+    expected = (sp.Integer(1), sp.I, sp.Integer(-1), -sp.I)[n % 4]
+    printed = _complex_from_text(p.answer_latex)
+    if sp.simplify(printed - expected) != 0:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: i^{n} = {expected}, key says {printed}"
+        )
+
+
+def _v_solve_exponential(p: Problem) -> None:
+    """Re-solve the printed a^x = c independently."""
+    text = p.question_latex.strip().strip("$")
+    m = re.match(r"(\d+)\^x\s*=\s*(.+)", text)
+    if not m:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot parse {p.question_latex!r}")
+    a = sp.Integer(m.group(1))
+    c = latex_to_sympy(m.group(2))
+    var = sp.Symbol("x", real=True)
+    # Without real=True, solve() also returns complex branch solutions
+    # whenever `a` is a perfect power of another integer (e.g. 8 = 2^3),
+    # since a^x = c is then satisfied by x plus multiples of a complex period.
+    sols = sp.solve(sp.Eq(a ** var, c), var)
+    if len(sols) != 1:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} has {len(sols)} solution(s)"
+        )
+    xm = re.search(r"x\s*=\s*(.+)", p.answer_latex.strip().strip("$"))
+    if not xm:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read key {p.answer_latex!r}")
+    printed = latex_to_sympy(xm.group(1))
+    if not _equal(sols[0], printed):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} solves to {sols[0]}, key says {printed}"
+        )
+
+
+def _v_solve_logarithmic(p: Problem) -> None:
+    """Re-derive x = b**c from the printed log_b(x) = c and require the same key."""
+    text = p.question_latex.strip().strip("$")
+    m = re.match(r"\\log_\{(\d+)\}\(x\)\s*=\s*(-?\d+)", text)
+    if not m:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot parse {p.question_latex!r}")
+    b, c = sp.Integer(m.group(1)), sp.Integer(m.group(2))
+    expected = b ** c
+    xm = re.search(r"x\s*=\s*(.+)", p.answer_latex.strip().strip("$"))
+    if not xm:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read key {p.answer_latex!r}")
+    printed = latex_to_sympy(xm.group(1))
+    if not _equal(expected, printed):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: log_{{{b}}}(x)={c} solves to x={expected}, key says {printed}"
+        )
+
+
+_LOG = re.compile(r"\\log_\{(\d+)\}\(([^()]*)\)")
+
+
+def _v_condense_log(p: Problem) -> None:
+    """Independently recompute the log-product identity numerically/symbolically."""
+    text = p.question_latex.strip().strip("$")
+    found = _LOG.findall(text)
+    if len(found) != 2:
+        raise VerificationError(f"{p.topic}/{p.subskill}: expected 2 logs in {p.question_latex!r}")
+    (b1, x1), (b2, x2) = found
+    if b1 != b2:
+        raise VerificationError(f"{p.topic}/{p.subskill}: mismatched bases {b1} vs {b2}")
+    lhs_val = sp.log(sp.Integer(x1), sp.Integer(b1)) + sp.log(sp.Integer(x2), sp.Integer(b1))
+
+    am = _LOG.match(p.answer_latex.strip().strip("$"))
+    if not am:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read key {p.answer_latex!r}")
+    rhs_val = sp.log(sp.Integer(am.group(2)), sp.Integer(am.group(1)))
+
+    if sp.simplify(lhs_val - rhs_val) != 0:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} = {sp.N(lhs_val)}, "
+            f"key {p.answer_latex!r} = {sp.N(rhs_val)}"
+        )
+
+
+def _v_arithmetic_nth_term(p: Problem) -> None:
+    a1, d, n = _nums(p.question_latex)
+    expected = a1 + (n - 1) * d
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: term should be {expected}")
+
+
+def _v_geometric_nth_term(p: Problem) -> None:
+    a1, r, n = _nums(p.question_latex)
+    expected = a1 * r ** (n - 1)
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: term should be {expected}")
+
+
+def _v_arithmetic_series_sum(p: Problem) -> None:
+    a1, d, n = _nums(p.question_latex)
+    expected = sp.Rational(n, 2) * (2 * a1 + (n - 1) * d)
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: sum should be {expected}")
+
+
+def _v_special_triangle_hyp(p: Problem) -> None:
+    """Recompute the hypotenuse from the printed triangle type and leg."""
+    text = p.question_latex
+    is_306090 = "30" in text and "60" in text
+    nums = _nums(text)
+    if not nums:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no leg length found in {text!r}")
+    leg = nums[-1]
+    expected = 2 * leg if is_306090 else leg * sp.sqrt(2)
+
+    printed = latex_to_sympy(p.answer_latex)
+    if not _equal(expected, printed):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: hypotenuse should be {expected}, key says {printed}"
+        )
+
+
+def _v_right_triangle_find_angle(p: Problem) -> None:
+    """Classify which ratio applies from the printed wording (never from
+    generator state), then re-derive the angle with the matching inverse
+    trig function."""
+    text = p.question_latex
+    nums = _nums(text)
+    has_opp, has_adj, has_hyp = "opposite" in text, "adjacent" in text, "hypotenuse" in text
+
+    if has_opp and has_adj and not has_hyp:
+        expected = (180 / sp.pi) * sp.atan(sp.Rational(nums[0], nums[1]))
+    elif has_opp and has_hyp:
+        expected = (180 / sp.pi) * sp.asin(sp.Rational(nums[0], nums[1]))
+    elif has_adj and has_hyp:
+        expected = (180 / sp.pi) * sp.acos(sp.Rational(nums[0], nums[1]))
+    else:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot classify triangle in {text!r}")
+    expected = sp.nsimplify(expected)
+
+    m = re.search(r"(-?\d+)\^\\circ", p.answer_latex)
+    if not m:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read key {p.answer_latex!r}")
+    printed = sp.Integer(m.group(1))
+    if not _equal(expected, printed):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: angle should be {expected}, key says {printed}"
+        )
+
+
+_PI_FRAC = re.compile(r"\\dfrac\{(-?\d*)\\pi\}\{(\d+)\}")
+_PI_PLAIN = re.compile(r"^(-?\d*)\\pi$")
+
+
+def _parse_pi_multiple(text: str) -> sp.Rational:
+    """Parse a bare ``"0"``, ``"\\pi"``/``"-\\pi"``/``"2\\pi"``, or
+    ``"\\dfrac{n\\pi}{d}"`` fragment into the rational multiple of pi it
+    represents."""
+    text = text.strip().strip("$")
+    if text == "0":
+        return sp.Integer(0)
+
+    def _coef(s: str) -> int:
+        return 1 if s == "" else (-1 if s == "-" else int(s))
+
+    m = _PI_FRAC.match(text)
+    if m:
+        return sp.Rational(_coef(m.group(1)), int(m.group(2)))
+    m = _PI_PLAIN.match(text)
+    if m:
+        return sp.Integer(_coef(m.group(1)))
+    raise VerificationError(f"cannot parse pi-fraction {text!r}")
+
+
+def _v_degree_radian_conversion(p: Problem) -> None:
+    direction = p.verify.get("direction")
+    if direction == "to_radians":
+        m = re.match(r"\$(-?\d+)\^\\circ\$", p.question_latex)
+        if not m:
+            raise VerificationError(f"{p.topic}/{p.subskill}: cannot parse {p.question_latex!r}")
+        deg = int(m.group(1))
+        want = sp.Rational(deg, 180)
+        got = _parse_pi_multiple(p.answer_latex)
+    else:
+        got_frac = _parse_pi_multiple(p.question_latex)
+        want = got_frac * 180
+        m = re.match(r"\$(-?\d+)\^\\circ\$", p.answer_latex)
+        if not m:
+            raise VerificationError(f"{p.topic}/{p.subskill}: cannot read key {p.answer_latex!r}")
+        got = sp.Integer(m.group(1))
+
+    if want != got:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} -> expected {want}, key gives {got}"
+        )
+
+
+def _v_exact_trig_value(p: Problem) -> None:
+    m = re.match(r"\$\\(sin|cos|tan)\((-?\d+)\^\\circ\)\$", p.question_latex)
+    if not m:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot parse {p.question_latex!r}")
+    func = {"sin": sp.sin, "cos": sp.cos, "tan": sp.tan}[m.group(1)]
+    angle = int(m.group(2))
+    expected = sp.nsimplify(func(sp.rad(angle)))
+    printed = latex_to_sympy(p.answer_latex)
+    if not _equal(expected, printed):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} = {expected}, key says {printed}"
+        )
+
+
 STRATEGIES = {
     "evaluate": _v_evaluate,
     "simplify": _v_simplify,
@@ -1017,6 +1261,18 @@ STRATEGIES = {
     "abs_inequality": _v_abs_inequality,
     "point_in_inequality": _v_point_in_inequality,
     "system_point_in_inequality": _v_system_point_in_inequality,
+    "complex_arith": _v_complex_arith,
+    "power_of_i": _v_power_of_i,
+    "solve_exponential": _v_solve_exponential,
+    "solve_logarithmic": _v_solve_logarithmic,
+    "condense_log": _v_condense_log,
+    "arithmetic_nth_term": _v_arithmetic_nth_term,
+    "geometric_nth_term": _v_geometric_nth_term,
+    "arithmetic_series_sum": _v_arithmetic_series_sum,
+    "special_triangle_hypotenuse": _v_special_triangle_hyp,
+    "right_triangle_find_angle": _v_right_triangle_find_angle,
+    "degree_radian_conversion": _v_degree_radian_conversion,
+    "exact_trig_value": _v_exact_trig_value,
 }
 
 

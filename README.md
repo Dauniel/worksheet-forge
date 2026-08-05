@@ -89,9 +89,10 @@ bug), `3` LaTeX failed.
 `ratios_percents`, `exponents`, `inequalities`, `word_problems`,
 `number_sense`, `roots`, `geometry`, `percent_apps`, `absolute_value`,
 `unit_rates`, `systems`, `quadratics`, `rational_expressions`,
-`polynomials`, `variation`, `radical_equations`, `graphing` — 86
-generators in total. Run `python -m forge topics` for the current list with
-subskills.
+`polynomials`, `variation`, `radical_equations`, `graphing`,
+`complex_numbers`, `exponential_logarithms`, `sequences_series`,
+`right_triangle_trig`, `unit_circle` — 99 generators in total. Run
+`python -m forge topics` for the current list with subskills.
 
 `graphing` is scoped to point-testing (`is $(x, y)$ a solution?`), not shaded
 regions -- a printed worksheet is graphed by hand, so there is no pixel
