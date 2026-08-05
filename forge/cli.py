@@ -92,6 +92,8 @@ def _topics_cmd(args: argparse.Namespace) -> int:
     print("Available topics (use topic, topic:count, or topic:count:difficulty):\n")
     print(describe_topics())
     print(f"\nDefault count per topic: {DEFAULT_COUNT}. Difficulties: easy, medium, hard.")
+    print("Target subskills with topic/subskill, joining several with '+':")
+    print("  forge quick slope/slope_from_two_points+equation_from_two_points:12")
     return 0
 
 
@@ -123,11 +125,16 @@ def main(argv=None) -> int:
         "quick",
         help="build a worksheet from a list of topics, no spec file needed",
         description=(
-            "Example: forge quick negatives fractions linear_equations:12:hard"
+            "Examples:\n"
+            "  forge quick negatives fractions linear_equations:12:hard\n"
+            "  forge quick slope/slope_from_two_points:10\n"
+            "  forge quick exponents/product_rule+quotient_rule:12:hard"
         ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     q.add_argument("topics", nargs="+",
-                   help="topics, optionally topic:count or topic:count:difficulty")
+                   help=("topics, optionally topic:count or topic:count:difficulty; "
+                         "add /subskill (or /sub1+sub2) to target subskills"))
     q.add_argument("--title", default="", help="worksheet title")
     q.add_argument("--header", default="", help="short header text")
     q.add_argument("--difficulty", default="", choices=["", "easy", "medium", "hard"],

@@ -75,7 +75,9 @@ from ..core.registry import register
 # tests/test_variance.py's SMALL_REACHABLE_SPACE table for the exact
 # reachable-count accounting this implies.
 SQUARE_BASE = {"easy": (2, 9), "medium": (2, 10), "hard": (2, 12)}
-CUBE_BASE = {"easy": (2, 5), "medium": (2, 5), "hard": (2, 6)}
+# Easy narrowed rather than medium widened: tests/test_variance.py pins the
+# exact reachable count at medium, and that pin is the useful one.
+CUBE_BASE = {"easy": (2, 4), "medium": (2, 5), "hard": (2, 6)}
 
 # sqrt(a^2 * b) -> a*sqrt(b): the PRODUCT a^2*b is capped (per tier, never
 # past 108), not the factors independently -- the coefficient bound is

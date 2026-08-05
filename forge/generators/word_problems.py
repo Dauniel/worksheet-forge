@@ -29,6 +29,18 @@ ITEMS = (
     ("candles", "candle"), ("posters", "poster"), ("mugs", "mug"),
 )
 SCALE = {"easy": (2, 9), "medium": (3, 15), "hard": (4, 25)}
+# Percent-off coupons, ramped. Kept to values a real coupon uses, and paired
+# below with a price that makes the saving a whole number of dollars -- a key
+# reading "$\frac{15}{2}$ dollars" is a worse answer than the question
+# deserves.
+COUPONS = {
+    "easy": (10, 20, 50),
+    "medium": (15, 25, 30, 40),
+    "hard": (5, 12, 35, 45, 60),
+}
+# A bike ride has to stay a believable length: the ramp belongs in the
+# arithmetic, not in asking how far someone gets in a 24-hour ride.
+MAX_HOURS = {"easy": 5, "medium": 7, "hard": 9}
 
 
 def _mk(text: str, lhs: str, rhs: str, value, subskill: str, difficulty: str,
@@ -63,7 +75,9 @@ def linear_model(rng: random.Random, difficulty: str) -> Problem:
     lo, hi = SCALE[difficulty]
     name = pick(rng, NAMES)
     plural, singular = pick(rng, ITEMS)
-    per = rng.randint(2, hi)
+    # Capped: nobody buys 16 mugs a week. The ramp rides on the number of
+    # weeks and the starting count instead, which costs the problem nothing.
+    per = rng.randint(2, min(hi, 8))
     # Never 1: "already owns 1 plants" reads as a bug to a student.
     extra = rng.randint(2, hi * 2)
     x_sol = rng.randint(2, hi)
@@ -82,7 +96,7 @@ def rate_model(rng: random.Random, difficulty: str) -> Problem:
     lo, hi = SCALE[difficulty]
     name = pick(rng, NAMES)
     rate = rng.randint(2, hi + 5)
-    hours = rng.randint(2, hi)
+    hours = rng.randint(2, min(hi, MAX_HOURS[difficulty]))
     distance = rate * hours
     text = (
         f"{name} rides at a steady ${rate}$ miles per hour and travels "
@@ -94,10 +108,15 @@ def rate_model(rng: random.Random, difficulty: str) -> Problem:
 
 @register("word_problems", "percent_model")
 def percent_model(rng: random.Random, difficulty: str) -> Problem:
-    pct = pick(rng, (10, 15, 20, 25, 30, 40, 50))
+    lo, hi = SCALE[difficulty]
+    pct = pick(rng, COUPONS[difficulty])
     name = pick(rng, NAMES)
     plural, singular = pick(rng, ITEMS)
-    original = rng.randint(2, 20) * 10
+    # Resampled until the coupon takes off a whole number of dollars.
+    while True:
+        original = rng.randint(2, hi) * 10
+        if (pct * original) % 100 == 0:
+            break
     saved = sp.Rational(pct, 100) * original
     text = (
         f"A {singular} originally costs $\\${original}$. {name} uses a "
@@ -118,9 +137,11 @@ def comparison_model(rng: random.Random, difficulty: str) -> Problem:
     b1 = rng.randint(5, hi * 4)
     # b2 chosen so the two plans agree exactly at x_sol.
     b2 = (m1 - m2) * x_sol + b1
-    if b2 < 0:
-        b1 += -b2
-        b2 = 0
+    # "Plan B charges $0 plus $9 per month" is not how a plan is ever quoted;
+    # shift both fees up so the cheaper plan still has a real one.
+    if b2 < 5:
+        b1 += 5 - b2
+        b2 = 5
     plural, _ = pick(rng, ITEMS)
     text = (
         f"{a_name} charges $\\${b1}$ plus $\\${m1}$ per month. "

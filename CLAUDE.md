@@ -133,6 +133,8 @@ worksheet can be reproduced, hand-edited, or committed.
 ```bash
 # no spec file needed -- topics, optionally topic:count or topic:count:difficulty
 python -m forge quick negatives fractions linear_equations:12:hard --seed 42
+# /subskill (joined with +) narrows a topic to part of its progression
+python -m forge quick exponents/product_rule+quotient_rule:12:hard
 python -m forge topics                      # list topics and subskills
 
 python -m forge build specs/placement_algebra1.yaml --seed 42

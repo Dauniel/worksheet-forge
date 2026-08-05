@@ -556,10 +556,30 @@ def _apportion(total: int, shares: List[int]) -> List[int]:
     return base
 
 
+def topic_subskills(topic: str) -> List[str]:
+    """Subskill names available for ``topic``, in progression order."""
+    return [e["subskill"] for e in CATALOG[topic]["progression"]]
+
+
 def parse_request(token: str) -> tuple:
-    """Parse ``negatives`` or ``negatives:12`` or ``negatives:12:hard``."""
-    parts = [p.strip() for p in str(token).split(":")]
-    topic = parts[0]
+    """Parse a quick-mode topic token.
+
+    ``negatives`` / ``negatives:12`` / ``negatives:12:hard``, optionally with
+    a subskill selector attached to the topic with ``/``::
+
+        slope/slope_from_two_points
+        slope/slope_from_two_points+equation_from_two_points:12:hard
+
+    Multiple subskills are joined with ``+`` -- not a comma, which the CLI
+    already treats as a separator between whole tokens. Returns
+    ``(topic, count, difficulty, subskills)``; ``subskills`` is ``None`` when
+    no selector was given, meaning "use the topic's full progression".
+    """
+    text = str(token).strip()
+    parts = [p.strip() for p in text.split(":")]
+    head = parts[0]
+    topic, _, sub_text = head.partition("/")
+    topic = topic.strip()
     count = int(parts[1]) if len(parts) > 1 and parts[1] else DEFAULT_COUNT
     difficulty = parts[2] if len(parts) > 2 and parts[2] else None
     if topic not in CATALOG:
@@ -570,7 +590,25 @@ def parse_request(token: str) -> tuple:
         raise ValueError(f"{topic}: count must be at least 1")
     if difficulty and difficulty not in ("easy", "medium", "hard"):
         raise ValueError(f"{topic}: unknown difficulty {difficulty!r}")
-    return topic, count, difficulty
+
+    subskills = None
+    if "/" in head:
+        subskills = [s.strip() for s in sub_text.split("+") if s.strip()]
+        if not subskills:
+            raise ValueError(
+                f"{topic}: '/' given with no subskill. "
+                f"Available: {', '.join(topic_subskills(topic))}"
+            )
+        available = topic_subskills(topic)
+        unknown = [s for s in subskills if s not in available]
+        if unknown:
+            raise KeyError(
+                f"{topic}: unknown subskill(s) {', '.join(repr(s) for s in unknown)}. "
+                f"Available: {', '.join(available)}"
+            )
+        seen = set()
+        subskills = [s for s in subskills if not (s in seen or seen.add(s))]
+    return topic, count, difficulty, subskills
 
 
 def spec_from_topics(
@@ -585,9 +623,14 @@ def spec_from_topics(
 
     sections = []
     for token in tokens:
-        topic, count, topic_difficulty = parse_request(token)
+        topic, count, topic_difficulty, subskills = parse_request(token)
         entry = CATALOG[topic]
         prog = entry["progression"]
+        if subskills is not None:
+            # Filtered in catalog order, not the order typed: the grouping
+            # below merges *consecutive* entries sharing a group, so honoring
+            # an arbitrary order would split a group into repeated sections.
+            prog = [e for e in prog if e["subskill"] in set(subskills)]
         counts = _apportion(count, [e["share"] for e in prog])
 
         # One section per group; consecutive entries sharing a group merge.
@@ -619,7 +662,7 @@ def spec_from_topics(
     for i, sec in enumerate(sections):
         sec["name"] = f"Part {PART_LETTERS[i % 26]}: {sec['name']}"
 
-    names = [CATALOG[parse_request(t)[0]]["name"] for t in tokens]
+    names = list(dict.fromkeys(CATALOG[parse_request(t)[0]]["name"] for t in tokens))
     return {
         "title": title or ", ".join(names),
         "header": header or title or _short_header(names),

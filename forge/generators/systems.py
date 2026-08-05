@@ -17,6 +17,8 @@ from ..core.registry import register
 from ..core.sampling import nonzero_int
 
 RANGES = {"easy": (1, 6), "medium": (2, 9), "hard": (2, 12)}
+# Ceiling for classify only -- see the note in that generator.
+CLASSIFY_MAX = {"easy": 4, "medium": 6, "hard": 8}
 
 
 def _std_form(a: int, b: int, c: int) -> str:
@@ -96,8 +98,11 @@ def classify(rng: random.Random, difficulty: str) -> Problem:
     the constant is scaled by the same ``k`` (infinite, same line) or offset
     (none, parallel but distinct).
     """
-    _, hi = RANGES[difficulty]
-    hi = min(hi, 6)  # keeps post-scaling coefficients on a worksheet-sized scale
+    # Coefficients here get multiplied by a scale factor k before printing, so
+    # they need a tighter ceiling than the other subskills. A flat min(hi, 6)
+    # did that, but clamped all three tiers to the same 6 -- identical output
+    # at easy, medium and hard. Per-tier ceilings keep the guard and the ramp.
+    hi = CLASSIFY_MAX[difficulty]
     kind = rng.choice(("one", "none", "infinite"))
 
     a1 = nonzero_int(rng, 1, hi)

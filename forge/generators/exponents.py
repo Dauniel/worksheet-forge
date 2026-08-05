@@ -15,6 +15,21 @@ EXP_RANGE = {"easy": (2, 7), "medium": (2, 9), "hard": (2, 12)}
 # Easy work keeps coefficients small but not fixed at 1 -- a constant
 # coefficient collapses the sample space into a handful of archetypes.
 COEF_RANGE = {"easy": (1, 4), "medium": (2, 9), "hard": (2, 12)}
+# negative_exponents and zero_and_negative_powers each used a bare
+# ``if difficulty == "easy"`` test, so they advertised three tiers and
+# implemented two -- medium and hard were byte-identical. Three bands each.
+NEG_BASES = {
+    "easy": (2, 3, 4, 5),
+    "medium": (2, 3, 4, 5, 6, 7, 10),
+    "hard": (2, 3, 5, 6, 7, 10, 11, 12),
+}
+NEG_MAX_N = {"easy": 3, "medium": 4, "hard": 4}
+NEG_COEF = {"easy": (1, 9), "medium": (1, 9), "hard": (2, 12)}
+ZNP_BASES = {"easy": (2, 3, 5), "medium": (2, 3, 5, 6, 7), "hard": (2, 3, 5, 6, 7, 10)}
+ZNP_A = {"easy": (2, 5), "medium": (2, 5), "hard": (2, 6)}
+ZNP_B = {"easy": (-4, 0), "medium": (-4, 0), "hard": (-5, 0)}
+# Powers stay readable: no key running to seven figures.
+ZNP_MAX = 100_000
 
 
 def _mk(question: str, expr, subskill: str, difficulty: str, kind: str = "simplify") -> Problem:
@@ -65,9 +80,9 @@ def power_rule(rng: random.Random, difficulty: str) -> Problem:
 @register("exponents", "negative_exponents")
 def negative_exponents(rng: random.Random, difficulty: str) -> Problem:
     """Numeric so the answer is a concrete fraction, not just a rewrite."""
-    base = pick(rng, (2, 3, 4, 5) if difficulty == "easy" else (2, 3, 4, 5, 6, 7, 10))
-    n = rng.randint(1, 3 if difficulty == "easy" else 4)
-    k = rng.randint(1, 9)
+    base = pick(rng, NEG_BASES[difficulty])
+    n = rng.randint(1, NEG_MAX_N[difficulty])
+    k = rng.randint(*NEG_COEF[difficulty])
     lead = "" if k == 1 else f"{k} \\cdot "
 
     style = rng.randrange(3)
@@ -147,9 +162,12 @@ def combined_rules(rng: random.Random, difficulty: str) -> Problem:
 @register("exponents", "zero_and_negative_powers")
 def zero_and_negative_powers(rng: random.Random, difficulty: str) -> Problem:
     """Mixed product of powers of the same base, including zero exponents."""
-    base = pick(rng, (2, 3, 5) if difficulty == "easy" else (2, 3, 5, 6, 7))
-    a = rng.randint(2, 5)
-    b = rng.randint(-4, 0)
+    while True:
+        base = pick(rng, ZNP_BASES[difficulty])
+        a = rng.randint(*ZNP_A[difficulty])
+        b = rng.randint(*ZNP_B[difficulty])
+        value = sp.Rational(base) ** (a + b)
+        if max(abs(sp.numer(value)), abs(sp.denom(value))) <= ZNP_MAX:
+            break
     question = rf"{base}^{{{a}}} \cdot {base}^{{{b}}}"
-    value = sp.Rational(base) ** (a + b)
     return _mk(question, value, "zero_and_negative_powers", difficulty, "evaluate")

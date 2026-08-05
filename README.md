@@ -46,6 +46,19 @@ Each token is `topic`, `topic:count`, or `topic:count:difficulty`. The
 generated spec is written alongside the PDFs so a good worksheet can be
 reproduced, hand-edited, or committed.
 
+To drill one part of a topic instead of its whole progression, attach a
+subskill to the topic with `/`, joining several with `+`:
+
+```bash
+python -m forge quick slope/slope_from_two_points:10
+python -m forge quick exponents/product_rule+quotient_rule:12:hard
+python -m forge topics                                   # subskill names
+```
+
+The count is split across the selected subskills, and each keeps the section
+directions and workspace the catalog gives it. An unknown subskill fails the
+build and lists the valid names for that topic.
+
 For a hand-written worksheet, use a YAML spec:
 
 ```yaml

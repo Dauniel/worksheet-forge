@@ -10,6 +10,7 @@ formula necessary rather than factoring.
 from __future__ import annotations
 
 import random
+from math import gcd
 
 import sympy as sp
 
@@ -19,6 +20,22 @@ from ..core.registry import register
 from ..core.sampling import nonzero_int, pick
 
 RANGES = {"easy": (1, 8), "medium": (2, 10), "hard": (2, 12)}
+
+# Denominator pairs for solve_by_factoring, giving a = m*p. Easy stays monic.
+# Medium introduces a genuinely non-monic leading coefficient; hard raises it
+# to at most 6. Six is the ceiling because the work the AC method actually
+# does is scanning the factor pairs of a*c -- past |a*c| in the high hundreds
+# the failure mode stops being "doesn't understand factoring" and becomes
+# "miscounted a factor pair", which teaches nothing.
+DENOMS = {
+    "easy": ((1, 1),),
+    "medium": ((1, 2), (1, 3), (2, 1), (3, 1)),
+    "hard": ((1, 4), (2, 2), (1, 5), (1, 6), (2, 3), (3, 2), (4, 1), (6, 1)),
+}
+# Root numerators shrink as the denominators grow, so that c = n*q stays in
+# the same range across tiers -- otherwise "hard" would just mean bigger
+# arithmetic on top of the harder factorization.
+NUMER_MAX = {"easy": 8, "medium": 7, "hard": 6}
 X = sp.Symbol("x")
 
 
@@ -37,17 +54,38 @@ def _mk_roots(a: int, b: int, c: int, r1, r2, subskill: str, difficulty: str) ->
 
 @register("quadratics", "solve_by_factoring")
 def solve_by_factoring(rng: random.Random, difficulty: str) -> Problem:
-    """``a*x^2 + b*x + c = 0``, factored from two chosen integer roots."""
-    _, hi = RANGES[difficulty]
-    r1 = nonzero_int(rng, -hi, hi)
-    r2 = nonzero_int(rng, -hi, hi)
-    while r2 == r1:
-        r2 = nonzero_int(rng, -hi, hi)
-    a = pick(rng, (1, 2, 3)) if difficulty != "easy" else 1
+    """``a*x^2 + b*x + c = 0``, expanded from ``(m*x - n)(p*x - q)``.
 
-    b = -a * (r1 + r2)
-    c = a * r1 * r2
-    return _mk_roots(a, b, c, r1, r2, "solve_by_factoring", difficulty)
+    The roots ``n/m`` and ``q/p`` are chosen first, then multiplied out, so
+    every equation factors exactly over the rationals.
+
+    Picking the two *denominators* rather than a bare leading coefficient is
+    what makes a non-monic problem genuinely non-monic. Scaling a monic
+    trinomial by ``a`` -- the obvious construction -- puts ``a`` into ``b``
+    and ``c`` as well, so ``3x^2 - 15x - 72`` is just ``3(x^2 - 5x - 24)``
+    and a student divides it away without ever using the AC method. Here
+    ``a = m*p`` while ``c = n*q``, and the ``gcd`` check below rejects the
+    draws where a common factor shows up anyway.
+    """
+    hi = NUMER_MAX[difficulty]
+    while True:
+        m, p = pick(rng, DENOMS[difficulty])
+        n = nonzero_int(rng, -hi, hi)
+        q = nonzero_int(rng, -hi, hi)
+        # Roots must already be in lowest terms, or the printed leading
+        # coefficient is not the one the student has to factor around.
+        if gcd(abs(n), m) != 1 or gcd(abs(q), p) != 1:
+            continue
+        # (m*x - n)(p*x - q)
+        a, b, c = m * p, -(m * q + n * p), n * q
+        if sp.Rational(n, m) == sp.Rational(q, p):
+            continue  # distinct roots only: no repeated-root factoring
+        if gcd(a, gcd(abs(b), abs(c))) != 1:
+            continue  # a common factor would collapse this back to monic
+        return _mk_roots(
+            a, b, c, sp.Rational(n, m), sp.Rational(q, p),
+            "solve_by_factoring", difficulty,
+        )
 
 
 @register("quadratics", "quadratic_formula")

@@ -61,6 +61,14 @@ SMALL_REACHABLE_SPACE = {
         "brute-force enumeration gives exactly 20 distinct reachable "
         "radicands",
     ),
+    ("geometry", "area_square"): (
+        55,  # 11 side lengths (SQUARE_SIZE["easy"] = 2..12) x 5 UNITS
+        "a square is one sampled dimension and a unit label -- there is "
+        "nothing else in the figure to vary. The easy band is deliberately "
+        "the narrowest of the three (it used to be 2-25 at every tier, which "
+        "meant difficulty did nothing at all), so its reachable space is "
+        "small by construction rather than by collapse",
+    ),
     ("unit_circle", "degree_radian_conversion"): (
         34,  # 17 "nice" angles (multiples of 30/45 up to 360) x 2 directions
         "degrees/radians conversion is only ever asked for a fixed, small "

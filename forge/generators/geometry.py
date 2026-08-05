@@ -23,8 +23,10 @@ UNITS = ("units", "cm", "in", "ft", "m")
 
 # area_square samples a single dimension, so it needs a slightly wider range
 # on its own to stay varied; the other shapes combine 2-4 independent samples
-# and stay in a modest, legible, grade-appropriate range.
-SQUARE_SIZE = {"easy": (2, 25), "medium": (2, 25), "hard": (2, 25)}
+# and stay in a modest, legible, grade-appropriate range. The bands still
+# overlap for that reason -- but they do have to differ, or the subskill
+# accepts a difficulty and ignores it.
+SQUARE_SIZE = {"easy": (2, 12), "medium": (4, 18), "hard": (6, 25)}
 SIZE = {"easy": (3, 10), "medium": (4, 14), "hard": (6, 18)}
 LENGTH = {"easy": (2, 6), "medium": (3, 8), "hard": (4, 10)}
 # Small, well-proportioned Pythagorean triples only -- nothing that draws as
