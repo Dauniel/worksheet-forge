@@ -24,7 +24,7 @@ def _resolve_out(args: argparse.Namespace) -> Path:
     """Each run gets its own out/<timestamp>/ folder unless --out is given."""
     if args.out:
         return Path(args.out)
-    return ROOT / "out" / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    return ROOT / "out" / datetime.now().strftime("%Y-%m-%d_%I-%M-%S-%p")
 
 
 def _run(args: argparse.Namespace, spec_path: Path) -> int:
