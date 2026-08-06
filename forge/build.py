@@ -112,6 +112,14 @@ def build(
     make_pdf: bool = True,
     allow_download: bool = True,
 ) -> dict:
+    """Write the worksheet: one .tex and one .pdf, problems then answer key.
+
+    A build emits exactly one document. The key is attached deliberately -- the
+    student checks their own answers against it -- so there is no separate
+    answer-free copy to hand out. ``ws.student_tex`` still renders the problem
+    body on its own, but only as a fixture for the layout tests; nothing writes
+    it to disk.
+    """
     spec = load_spec(spec_path)
     ws = generate(spec, seed, ledger=ledger)
 
@@ -120,7 +128,7 @@ def build(
     stem = Path(spec_path).stem + (f"_{label}" if label else "") + f"_seed{seed}"
 
     paths = {}
-    for kind, source in (("key", ws.key_tex), ("student", ws.student_tex)):
+    for kind, source in (("key", ws.key_tex),):
         tex_path = out_dir / f"{stem}_{kind}.tex"
         tex_path.write_text(source)
         paths[f"{kind}_tex"] = tex_path

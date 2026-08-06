@@ -52,7 +52,7 @@ def _run(args: argparse.Namespace, spec_path: Path) -> int:
         ws = paths["worksheet"]
         tag = f"version {label} " if label else ""
         print(f"{tag}seed={seed}  {len(ws.problems)} problems, all verified")
-        for key in ("key_pdf", "student_pdf", "key_tex", "student_tex"):
+        for key in ("key_pdf", "key_tex"):
             if key in paths:
                 print(f"  {key:12s} {paths[key]}")
     return 0

@@ -60,10 +60,15 @@ fractions.
 - **Sections flow continuously.** No `\newpage` between sections.
 - **Fractions:** improper fractions with magnitude > 1 display as mixed numbers
   (`$1\frac{7}{12}$`); `\dfrac` in question bodies, `\frac` in the answer key.
-- **Answer key:** the teacher copy is all problems, then `\newpage`, then one
-  consolidated `\section*{Answer Key}` with a `\subsection*` per part. The
-  student copy is a **separate `.tex` file** with no answer content at all.
-- Both PDFs go to `out/`.
+- **Answer key:** the worksheet is all problems, then `\newpage`, then one
+  consolidated `\section*{Answer Key}` with a `\subsection*` per part.
+- **A build emits exactly one `.tex` and one `.pdf`,** both to `out/`. The key
+  is attached on purpose: the student works the problems, then checks their own
+  answers against it. There is no separate answer-free copy to hand out, and
+  nothing should reintroduce one — `tests/test_build.py`'s
+  `test_build_emits_exactly_one_tex_and_one_pdf` holds the line.
+  (`BuiltWorksheet.student_tex` still renders the problem body without the key,
+  but only as a fixture for the layout tests; it is never written to disk.)
 - **Never concatenate the two PDFs.** The teacher copy already contains every
   problem, so joining it to the student copy prints the whole worksheet twice
   before the key — this shipped once. A single-file hand-out is the teacher
@@ -73,9 +78,10 @@ fractions.
 ## Filing a delivered worksheet
 
 Worksheets given to a student live in `tutor/worksheets/<Student>/` as
-`<YYYY-MM-DD>_<Name>_spec.yaml`, `..._student.tex`, `..._key.tex`, and a
-single `<YYYY-MM-DD>_<Name>.pdf` — that PDF is the teacher copy (see above),
-not a merge. `out/` is gitignored; worksheets are reproducible from the spec
+`<YYYY-MM-DD>_<Name>_spec.yaml`, `..._key.tex`, and a single
+`<YYYY-MM-DD>_<Name>.pdf` — problems then key, not a merge. Worksheets filed
+before August 2026 also carry a `..._student.tex`; that is historical and no
+longer produced. `out/` is gitignored; worksheets are reproducible from the spec
 plus the seed, so build delivered copies with `--no-history`, which makes the
 output depend on the seed alone. Without it the anti-repeat ledger silently
 shifts the draws between runs and the same seed stops reproducing the sheet.

@@ -115,9 +115,19 @@ def test_workspace_follows_every_item(spec_path):
 @pytest.mark.skipif(shutil.which("pdflatex") is None, reason="pdflatex not installed")
 def test_end_to_end_pdfs(spec_path, tmp_path):
     paths = build(spec_path, seed=42, out_dir=tmp_path, ledger=NullLedger())
-    for key in ("key_pdf", "student_pdf"):
-        pdf = paths[key]
-        assert pdf.exists(), f"{key} was not written"
-        assert pdf.stat().st_size > 10_000, f"{key} is suspiciously small"
-    # The key has at least one page more than the student copy.
-    assert paths["key_pdf"].stat().st_size > paths["student_pdf"].stat().st_size
+    pdf = paths["key_pdf"]
+    assert pdf.exists(), "key_pdf was not written"
+    assert pdf.stat().st_size > 10_000, "key_pdf is suspiciously small"
+
+
+def test_build_emits_exactly_one_tex_and_one_pdf(spec_path, tmp_path):
+    """A worksheet is one document: problems, then the key the student checks against.
+
+    The answer-free copy was emitted alongside it for a while, which made every
+    build four files and left the filing rule ambiguous about which PDF counted.
+    """
+    paths = build(spec_path, seed=42, out_dir=tmp_path, ledger=NullLedger(),
+                  make_pdf=False)
+    assert set(paths) == {"key_tex", "worksheet"}
+    assert not list(tmp_path.glob("*student*"))
+    assert [p.name for p in tmp_path.glob("*.tex")] == [paths["key_tex"].name]
