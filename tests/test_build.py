@@ -131,3 +131,17 @@ def test_build_emits_exactly_one_tex_and_one_pdf(spec_path, tmp_path):
     assert set(paths) == {"key_tex", "worksheet"}
     assert not list(tmp_path.glob("*student*"))
     assert [p.name for p in tmp_path.glob("*.tex")] == [paths["key_tex"].name]
+
+
+def test_empty_section_fails_loudly():
+    """A section with no resolvable problems must not build a broken PDF.
+
+    Rendering one emits an empty ``enumerate``, which LaTeX rejects with a
+    "missing \\item" error pointing at a line the spec author never wrote.
+    """
+    spec = {
+        "title": "Empty",
+        "sections": [{"name": "Part A: Nothing", "directions": "Evaluate."}],
+    }
+    with pytest.raises(ValueError, match="no problems"):
+        generate(spec, seed=1, ledger=NullLedger())

@@ -85,7 +85,20 @@ def generate(spec: dict, seed: int, ledger: Optional[Ledger] = None) -> BuiltWor
                 "problems": items,
             }
         )
+        if not items:
+            # An empty section renders \begin{enumerate}\end{enumerate}, which
+            # LaTeX rejects with a "missing \item" error pointing at a line the
+            # spec author never wrote. The usual cause is a section whose
+            # `problems:` list is missing or misspelled -- silently building a
+            # zero-problem worksheet is never what was wanted.
+            raise ValueError(
+                f"section {sec['name']!r} produced no problems; it needs a "
+                "`problems:` list of {topic, subskill, count} entries"
+            )
         all_problems.extend(items)
+
+    if not all_problems:
+        raise ValueError("spec produced no problems at all")
 
     # Nothing renders until every answer has been independently re-derived.
     verify_all(all_problems)
