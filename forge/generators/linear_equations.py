@@ -16,16 +16,25 @@ from ..core.problem import Problem
 from ..core.registry import register
 from ..core.sampling import nonzero_int, pick
 
-RANGES = {"easy": (1, 9), "medium": (2, 12), "hard": (2, 15)}
-NICE_DENOMS = (2, 3, 4)
+RANGES = {"easy": (1, 9), "medium": (2, 12), "hard": (3, 20)}
+
+# Denominators widen with difficulty: thirds and quarters clear in one step,
+# while fifths and sixths force a real LCD before the equation moves.
+NICE_DENOMS = {"easy": (2, 3, 4), "medium": (2, 3, 4), "hard": (2, 3, 4, 5, 6)}
+
+# How often the solution itself is a fraction rather than an integer. This is
+# the difficulty that actually bites -- a student who can solve 3x+5=20 often
+# stalls when x lands on -7/4 -- so it is the axis that separates the tiers,
+# not just the size of the coefficients.
+FRACTION_P = {"easy": 0.0, "medium": 0.2, "hard": 0.35}
 
 
 def _solution(rng: random.Random, difficulty: str) -> Fraction:
-    """Bias hard toward integers; occasionally a tidy fraction on harder work."""
+    """Integer solutions by default; a tidy fraction at the rate set by tier."""
     lo, hi = RANGES[difficulty]
     whole = nonzero_int(rng, -hi, hi)
-    if difficulty != "easy" and rng.random() < 0.2:
-        return Fraction(whole, pick(rng, NICE_DENOMS))
+    if rng.random() < FRACTION_P[difficulty]:
+        return Fraction(whole, pick(rng, NICE_DENOMS[difficulty]))
     return Fraction(whole)
 
 
@@ -95,19 +104,19 @@ def fractional(rng: random.Random, difficulty: str) -> Problem:
     style = rng.randrange(3)
 
     if style == 0:
-        n = pick(rng, NICE_DENOMS)
+        n = pick(rng, NICE_DENOMS[difficulty])
         m = Fraction(nonzero_int(rng, -min(hi, 9), min(hi, 9)), n)
         b = nonzero_int(rng, -hi, hi)
         lhs = linear(m, b, display=True)
         rhs = dnum(m * x_sol + b)
     elif style == 1:
-        d = pick(rng, NICE_DENOMS)
+        d = pick(rng, NICE_DENOMS[difficulty])
         b = nonzero_int(rng, -hi, hi)
         lhs = terms(rf"\dfrac{{x}}{{{d}}}", num(b))
         rhs = dnum(x_sol / d + b)
     else:
         a = nonzero_int(rng, -hi, hi)
-        d = pick(rng, NICE_DENOMS)
+        d = pick(rng, NICE_DENOMS[difficulty])
         b = nonzero_int(rng, -hi, hi)
         inner = linear(1, a)
         lhs = terms(rf"\dfrac{{{inner}}}{{{d}}}", num(b))
@@ -133,7 +142,7 @@ def proportion(rng: random.Random, difficulty: str) -> Problem:
         # (a*x + b)/d = p/q, where p/q is n/d scaled up so it isn't already
         # in lowest terms matching the left denominator.
         a = nonzero_int(rng, 1, min(hi, 9))
-        d = pick(rng, NICE_DENOMS)
+        d = pick(rng, NICE_DENOMS[difficulty])
         # p/q below is always n/d scaled, so a radicand-free n divisible by d
         # would print a right side that reduces to a whole number (8/8 = 1),
         # collapsing the cross-multiplication into a one-step equation.
@@ -159,7 +168,7 @@ def proportion(rng: random.Random, difficulty: str) -> Problem:
     else:
         # (a1*x + b1)/d1 = (a2*x + b2)/d2, with d2 a small integer multiple
         # of d1 (or vice versa) so the matching numerators stay exact ints.
-        d_base = pick(rng, NICE_DENOMS)
+        d_base = pick(rng, NICE_DENOMS[difficulty])
         k = pick(rng, (2, 3))
         n_base = nonzero_int(rng, -hi, hi)
         n_other = n_base * k

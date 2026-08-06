@@ -12,10 +12,16 @@ from ..core.problem import Problem
 from ..core.registry import register
 from ..core.sampling import nonzero_int, pick
 
-NICE_DENOMS = (2, 3, 4)
+NICE_DENOMS = {"easy": (2, 3, 4), "medium": (2, 3, 4), "hard": (2, 3, 4, 5, 6)}
 
 X = sp.Symbol("x")
-RANGES = {"easy": (1, 9), "medium": (2, 12), "hard": (2, 15)}
+RANGES = {"easy": (1, 9), "medium": (2, 12), "hard": (3, 20)}
+
+# Probability the leading coefficient is negative, which is what forces the
+# sign flip. Left to an even coin the flip shows up in half the problems at
+# every tier, so the tiers taught the same thing at different magnitudes;
+# weighting it is what actually makes hard harder here.
+NEG_LEAD_P = {"easy": 0.35, "medium": 0.5, "hard": 0.75}
 RELS = {"<": r"<", "<=": r"\le", ">": r">", ">=": r"\ge"}
 FLIP = {"<": ">", ">": "<", "<=": ">=", ">=": "<="}
 
@@ -50,6 +56,12 @@ def _p(latex: str) -> str:
     return str(latex_to_sympy(latex))
 
 
+def _lead(rng: random.Random, difficulty: str, hi: int) -> int:
+    """A nonzero leading coefficient, signed negative at the tier's rate."""
+    sign = -1 if rng.random() < NEG_LEAD_P[difficulty] else 1
+    return nonzero_int(rng, 2, hi) * sign
+
+
 def _describe(l_expr, r_expr, rel: str):
     """Reduce ``ax + b REL c`` to ``x REL' k``, flipping when a < 0."""
     diff = sp.expand(l_expr - r_expr)
@@ -68,7 +80,7 @@ def one_step(rng: random.Random, difficulty: str) -> Problem:
         b = nonzero_int(rng, -hi, hi)
         return _mk(terms("x", num(b)), rel, str(nonzero_int(rng, -hi, hi)),
                    "one_step", difficulty)
-    m = nonzero_int(rng, 2, hi) * rng.choice((1, -1))
+    m = _lead(rng, difficulty, hi)
     k = nonzero_int(rng, 2, hi) * m
     return _mk(coeff(m, "x"), rel, str(k), "one_step", difficulty)
 
@@ -78,7 +90,7 @@ def two_step(rng: random.Random, difficulty: str) -> Problem:
     lo, hi = RANGES[difficulty]
     rel = rng.choice(list(RELS))
     x_bound = nonzero_int(rng, -hi, hi)
-    m = nonzero_int(rng, 2, hi) * rng.choice((1, -1))
+    m = _lead(rng, difficulty, hi)
     b = nonzero_int(rng, -hi, hi)
     return _mk(linear(m, b), rel, str(m * x_bound + b), "two_step", difficulty)
 
@@ -115,19 +127,19 @@ def fractional(rng: random.Random, difficulty: str) -> Problem:
     style = rng.randrange(3)
 
     if style == 0:
-        n = pick(rng, NICE_DENOMS)
+        n = pick(rng, NICE_DENOMS[difficulty])
         m = Fraction(nonzero_int(rng, -min(hi, 9), min(hi, 9)), n)
         b = nonzero_int(rng, -hi, hi)
         lhs = linear(m, b, display=True)
         rhs = dnum(m * x_bound + b)
     elif style == 1:
-        d = pick(rng, NICE_DENOMS)
+        d = pick(rng, NICE_DENOMS[difficulty])
         b = nonzero_int(rng, -hi, hi)
         lhs = terms(rf"\dfrac{{x}}{{{d}}}", num(b))
         rhs = dnum(Fraction(x_bound, d) + b)
     else:
         a = nonzero_int(rng, -hi, hi)
-        d = pick(rng, NICE_DENOMS)
+        d = pick(rng, NICE_DENOMS[difficulty])
         b = nonzero_int(rng, -hi, hi)
         inner = linear(1, a)
         lhs = terms(rf"\dfrac{{{inner}}}{{{d}}}", num(b))
@@ -148,8 +160,8 @@ def fractional_both_sides(rng: random.Random, difficulty: str) -> Problem:
     # one side survives reduction with a real denominator -- otherwise this
     # subskill degenerates into multi_step_both_sides with no fraction in sight.
     while True:
-        m1 = Fraction(nonzero_int(rng, -cap, cap), pick(rng, NICE_DENOMS))
-        m2 = Fraction(nonzero_int(rng, -cap, cap), pick(rng, NICE_DENOMS))
+        m1 = Fraction(nonzero_int(rng, -cap, cap), pick(rng, NICE_DENOMS[difficulty]))
+        m2 = Fraction(nonzero_int(rng, -cap, cap), pick(rng, NICE_DENOMS[difficulty]))
         if m1 != m2 and (m1.denominator > 1 or m2.denominator > 1):
             break
     b1 = nonzero_int(rng, -hi, hi)
