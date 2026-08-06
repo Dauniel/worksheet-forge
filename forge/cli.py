@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import random
+import shutil
 import string
 import sys
 from datetime import datetime
@@ -88,6 +89,69 @@ def _quick_cmd(args: argparse.Namespace) -> int:
     return _run(args, spec_path)
 
 
+WORKSHEETS = ROOT / "tutor" / "worksheets"
+
+
+def _deliver_cmd(args: argparse.Namespace) -> int:
+    """Build a worksheet and file it for a student in one step.
+
+    Three conventions used to live only in CLAUDE.md, and all three were broken
+    the first time an agent followed the prose: build with ``--no-history`` so
+    the seed alone reproduces the sheet, write the trio (spec, key .tex, PDF)
+    into ``tutor/worksheets/<Student>/``, and leave nothing behind in ``out/``.
+    This command is the executable version of that paragraph.
+    """
+    spec_path = Path(args.spec)
+    date = args.date or datetime.now().strftime("%Y-%m-%d")
+    name = args.student.split("_")[0]
+    dest = WORKSHEETS / args.student
+    stem = f"{date}_{name}"
+
+    final_pdf = dest / f"{stem}.pdf"
+    if final_pdf.exists() and not args.force:
+        print(f"REFUSING to overwrite {final_pdf} (pass --force)", file=sys.stderr)
+        return 1
+
+    # The ledger shifts draws between runs, so a delivered sheet built against
+    # it stops reproducing from its seed. Never optional here.
+    args.no_history = True
+    args.versions = 1
+    args.no_pdf = False
+    if args.seed is None:
+        args.seed = random.randrange(1, 10**9)
+
+    # Pin the staging dir before building: _resolve_out stamps a fresh
+    # timestamp on every call, so asking for it twice yields two directories.
+    out_dir = _resolve_out(args)
+    args.out = str(out_dir)
+
+    rc = _run(args, spec_path)
+    if rc != 0:
+        return rc
+
+    built_pdf = next(out_dir.glob("*_key.pdf"))
+    built_tex = next(out_dir.glob("*_key.tex"))
+
+    dest.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(built_pdf, final_pdf)
+    shutil.copy2(built_tex, dest / f"{stem}_key.tex")
+
+    # Persist the seed into the filed spec so the sheet is reproducible from
+    # the folder alone -- without it the seed lives only in a console line.
+    spec = yaml.safe_load(spec_path.read_text())
+    spec["seed"] = args.seed
+    (dest / f"{stem}_spec.yaml").write_text(
+        yaml.safe_dump(spec, sort_keys=False, width=100)
+    )
+
+    print(f"\ndelivered to {dest}")
+    for suffix in (".pdf", "_key.tex", "_spec.yaml"):
+        print(f"  {stem}{suffix}")
+    print(f"reproduce with: forge build {dest / f'{stem}_spec.yaml'} "
+          f"--seed {args.seed} --no-history")
+    return 0
+
+
 def _topics_cmd(args: argparse.Namespace) -> int:
     print("Available topics (use topic, topic:count, or topic:count:difficulty):\n")
     print(describe_topics())
@@ -143,6 +207,25 @@ def main(argv=None) -> int:
     q.add_argument("--save", default="", help="write the generated spec here")
     _add_common(q)
     q.set_defaults(func=_quick_cmd)
+
+    d = sub.add_parser(
+        "deliver",
+        help="build a worksheet and file it under tutor/worksheets/<Student>/",
+        description=(
+            "Examples:\n"
+            "  forge deliver specs/rachel.yaml --student Rachel_Math\n"
+            "  forge deliver specs/rachel.yaml --student Rachel_Math --seed 806"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    d.add_argument("spec", help="path to a YAML spec")
+    d.add_argument("--student", required=True,
+                   help="folder name under tutor/worksheets/, e.g. Rachel_Math")
+    d.add_argument("--date", default="", help="YYYY-MM-DD (default: today)")
+    d.add_argument("--force", action="store_true",
+                   help="overwrite an already-delivered sheet for this date")
+    _add_common(d)
+    d.set_defaults(func=_deliver_cmd)
 
     t = sub.add_parser("topics", help="list available topics and subskills")
     t.set_defaults(func=_topics_cmd)

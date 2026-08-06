@@ -1,0 +1,165 @@
+title: Rachel Math Worksheet
+header: Rachel Math Worksheet
+sections:
+- name: 'Part A: Negative Number Operations'
+  directions: Evaluate each expression completely.
+  workspace: 1.1cm
+  columns: 2
+  problems:
+  - topic: negatives
+    subskill: add_sub_integers
+    count: 5
+    difficulty: hard
+  - topic: negatives
+    subskill: mul_div_integers
+    count: 5
+    difficulty: hard
+  - topic: negatives
+    subskill: mixed_operations
+    count: 5
+    difficulty: hard
+  - topic: negatives
+    subskill: order_of_operations
+    count: 5
+    difficulty: hard
+- name: 'Part B: Fractions'
+  directions: Evaluate. Write every answer in lowest terms.
+  workspace: 1.4cm
+  columns: 2
+  problems:
+  - topic: fractions
+    subskill: add_sub_fractions
+    count: 5
+    difficulty: easy
+  - topic: fractions
+    subskill: mul_div_fractions
+    count: 5
+    difficulty: easy
+  - topic: fractions
+    subskill: mixed_numbers
+    count: 5
+    difficulty: medium
+- name: 'Part C: Writing Fractions in Lowest Terms'
+  directions: Write each fraction in lowest terms.
+  workspace: 1.1cm
+  columns: 2
+  problems:
+  - topic: fractions
+    subskill: simplify_fractions
+    count: 5
+    difficulty: medium
+- name: 'Part D: Simplifying Expressions'
+  directions: Simplify each expression.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: like_terms
+    subskill: combine_like_terms
+    count: 5
+    difficulty: hard
+  - topic: like_terms
+    subskill: distribute_and_combine
+    count: 5
+    difficulty: hard
+- name: 'Part E: Adding and Subtracting Linear Expressions'
+  directions: Add or subtract, then simplify.
+  workspace: 1.4cm
+  columns: 2
+  problems:
+  - topic: like_terms
+    subskill: add_subtract_linear
+    count: 5
+    difficulty: hard
+- name: 'Part F: Factoring Linear Expressions'
+  directions: Factor out the greatest common factor.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: like_terms
+    subskill: factor_gcf
+    count: 5
+    difficulty: hard
+- name: 'Part G: Solving Linear Equations'
+  directions: Solve each equation for $x$. Show your steps.
+  workspace: 2.0cm
+  columns: 2
+  problems:
+  - topic: linear_equations
+    subskill: one_step
+    count: 4
+    difficulty: easy
+  - topic: linear_equations
+    subskill: two_step
+    count: 4
+    difficulty: easy
+  - topic: linear_equations
+    subskill: with_distribution
+    count: 3
+    difficulty: medium
+  - topic: linear_equations
+    subskill: multi_step_both_sides
+    count: 3
+    difficulty: medium
+  - topic: linear_equations
+    subskill: fractional
+    count: 3
+    difficulty: hard
+  - topic: linear_equations
+    subskill: proportion
+    count: 3
+    difficulty: hard
+- name: 'Part H: Linear Inequalities'
+  directions: Solve each inequality for $x$.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - topic: inequalities
+    subskill: one_step
+    count: 4
+    difficulty: hard
+  - topic: inequalities
+    subskill: two_step
+    count: 4
+    difficulty: hard
+  - topic: inequalities
+    subskill: multi_step_both_sides
+    count: 4
+    difficulty: hard
+  - topic: inequalities
+    subskill: fractional
+    count: 4
+    difficulty: hard
+  - topic: inequalities
+    subskill: fractional_both_sides
+    count: 4
+    difficulty: hard
+- name: 'Part I: Exponent Rules'
+  directions: Simplify. Write answers with positive exponents.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: exponents
+    subskill: product_rule
+    count: 4
+    difficulty: easy
+  - topic: exponents
+    subskill: quotient_rule
+    count: 4
+    difficulty: easy
+  - topic: exponents
+    subskill: power_rule
+    count: 3
+    difficulty: medium
+  - topic: exponents
+    subskill: negative_exponents
+    count: 3
+    difficulty: medium
+  - topic: exponents
+    subskill: zero_and_negative_powers
+    count: 3
+    difficulty: medium
+  - topic: exponents
+    subskill: combined_rules
+    count: 3
+    difficulty: hard
+seed: 806

@@ -77,14 +77,34 @@ fractions.
 
 ## Filing a delivered worksheet
 
-Worksheets given to a student live in `tutor/worksheets/<Student>/` as
-`<YYYY-MM-DD>_<Name>_spec.yaml`, `..._key.tex`, and a single
-`<YYYY-MM-DD>_<Name>.pdf` — problems then key, not a merge. Worksheets filed
-before August 2026 also carry a `..._student.tex`; that is historical and no
-longer produced. `out/` is gitignored; worksheets are reproducible from the spec
-plus the seed, so build delivered copies with `--no-history`, which makes the
-output depend on the seed alone. Without it the anti-repeat ledger silently
-shifts the draws between runs and the same seed stops reproducing the sheet.
+**Use `forge deliver`, not `forge build`.** It is the executable form of every
+rule below — it forces `--no-history`, writes the trio into the student folder,
+records the seed into the filed spec, and refuses to clobber a sheet already
+delivered for that date.
+
+```bash
+python -m forge deliver specs/rachel.yaml --student Rachel_Math --seed 806
+```
+
+Worksheets given to a student live in `tutor/worksheets/<Student>_<Subject>/`
+(e.g. `Rachel_Math`, `Jean_English`; a student taking two subjects gets two
+folders) as `<YYYY-MM-DD>_<Name>_spec.yaml`, `..._key.tex`, and a single
+`<YYYY-MM-DD>_<Name>.pdf` — problems then key, not a merge. Some worksheets
+also carry a `..._student.tex`; that is historical and no longer produced.
+
+`out/` is gitignored, and nothing delivered may be left there. Worksheets are
+reproducible from the spec plus the seed, so delivered copies are built with
+`--no-history`, which makes the output depend on the seed alone. Without it the
+anti-repeat ledger silently shifts the draws between runs and the same seed
+stops reproducing the sheet — this shipped once, on a sheet whose spec then
+could not rebuild it. The seed is written into the delivered spec as a `seed:`
+key so the folder alone is enough to rebuild.
+
+`tests/test_delivery.py` holds this line: every filed PDF must have its spec and
+key beside it, and nothing may sit loose at the worksheets root. Sheets filed
+before this command existed are grandfathered in `LEGACY_INCOMPLETE` — their
+seeds were never recorded, so a rebuilt key would not match the PDF the student
+received. Do not add to that list.
 
 ### Coefficient rendering
 
