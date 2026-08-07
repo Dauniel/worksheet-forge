@@ -169,3 +169,52 @@ def fractional_both_sides(rng: random.Random, difficulty: str) -> Problem:
     lhs = linear(m1, b1, display=True)
     rhs = linear(m2, b2, display=True)
     return _mk(lhs, rel, rhs, "fractional_both_sides", difficulty)
+
+
+COMPOUND_WIDTH = {"easy": (3, 8), "medium": (4, 14), "hard": (5, 22)}
+
+
+@register("inequalities", "compound_and")
+def compound_and(rng: random.Random, difficulty: str) -> Problem:
+    """A conjunction written as one three-part inequality: a < mx + b < c.
+
+    Built backwards from the two bounds so both edges are integers. A
+    negative m flips *both* relations, which is the case this subskill
+    exists to drill -- ``_describe`` handles one relation at a time, so the
+    flip is applied here explicitly and checked by the verifier against the
+    printed form.
+    """
+    lo, hi = COMPOUND_WIDTH[difficulty]
+    m = _lead(rng, difficulty, hi)
+    b = nonzero_int(rng, -hi, hi)
+    low_x = nonzero_int(rng, -hi, hi)
+    high_x = low_x + rng.randint(*COMPOUND_WIDTH[difficulty])
+
+    left, right = m * low_x + b, m * high_x + b
+    if left > right:  # negative coefficient reverses which edge is smaller
+        left, right = right, left
+    strict_l = rng.random() < 0.5
+    strict_r = rng.random() < 0.5
+    rel_l = "<" if strict_l else "\\le"
+    rel_r = "<" if strict_r else "\\le"
+
+    middle = linear(m, b)
+    question = f"${left} {rel_l} {middle} {rel_r} {right}$"
+
+    lo_b, hi_b = (low_x, high_x)
+    left_closed = not strict_l if m > 0 else not strict_r
+    right_closed = not strict_r if m > 0 else not strict_l
+    solution = sp.Interval(lo_b, hi_b, left_open=not left_closed, right_open=not right_closed)
+
+    bound_l = f"{'\\le' if left_closed else '<'}"
+    bound_r = f"{'\\le' if right_closed else '<'}"
+    answer = f"${lo_b} {bound_l} x {bound_r} {hi_b}$"
+    return Problem(
+        question_latex=question,
+        answer_latex=answer,
+        answer_expr=solution,
+        topic="inequalities",
+        subskill="compound_and",
+        difficulty=difficulty,
+        verify={"kind": "compound_inequality"},
+    )

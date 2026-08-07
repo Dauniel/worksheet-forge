@@ -37,6 +37,20 @@ SEEDS = 1000 if os.environ.get("FORGE_FULL_FUZZ") == "1" else 250
 # ceiling instead of an unreachable generic floor. Mirrors the
 # ALLOWED_UNCATALOGED pattern in tests/test_catalog_completeness.py.
 SMALL_REACHABLE_SPACE = {
+    ("geometry", "pythagorean_hypotenuse"): (
+        55,  # 6 triples x 5 UNITS x SCALE["medium"] = (1, 2), minus 3-4-5
+             # scaled colliding with 6-8-10 unscaled
+        "both legs are given and the hypotenuse must come out a whole "
+        "number, so the sides can only be a Pythagorean triple -- 6 "
+        "well-proportioned primitives times the unit label, scaled per "
+        "tier. Widening it means accepting irrational hypotenuses (that "
+        "is simplify_radical) or triangles that draw as slivers",
+    ),
+    ("geometry", "pythagorean_leg"): (
+        110,  # as above, doubled: either leg may be the unknown
+        "same triple pool as pythagorean_hypotenuse, doubled because "
+        "either leg may be the unknown",
+    ),
     ("roots", "square_root"): (
         9,  # bases 2..10 (SQUARE_BASE["medium"]), bare sqrt(n^2) = n only
         "positive perfect squares only, bases 2-10 at medium difficulty "

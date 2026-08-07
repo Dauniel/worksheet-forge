@@ -195,7 +195,11 @@ CATALOG: Dict[str, dict] = {
             _s("multi_step_both_sides", "medium", columns=2),
             _s("fractional", "hard", columns=2),
             _s("fractional_both_sides", "hard", columns=2),
-        ],
+                    _s("compound_and", "hard",
+               group="Compound Inequalities",
+               directions="Solve each compound inequality for $x$.",
+               workspace="2.0cm", columns=2),
+],
     },
     "word_problems": {
         "name": "Word Problems",
@@ -217,6 +221,60 @@ CATALOG: Dict[str, dict] = {
         "workspace": "1.3cm",
         "progression": [
             _s("classify", "easy", columns=2),
+        ],
+    },
+    "statistics": {
+        "name": "Mean, Median, Mode, and Range",
+        "directions": "Find the mean of each data set.",
+        "workspace": "1.5cm",
+        "progression": [
+            # Each measure needs its own sentence -- "find the mean" does not
+            # cover "find the mode" -- so every subskill is its own part.
+            _s("mean", "easy", columns=1),
+            _s("median", "easy",
+               group="Median",
+               directions="Find the median of each data set.", columns=1),
+            _s("mode", "easy",
+               group="Mode",
+               directions="Find the mode of each data set.", columns=1),
+            _s("range_of_set", "medium",
+               group="Range",
+               directions="Find the range of each data set.", columns=1),
+        ],
+    },
+    "scientific_notation": {
+        "name": "Scientific Notation",
+        "directions": "Write each number in scientific notation.",
+        "workspace": "1.2cm",
+        "progression": [
+            _s("to_scientific", "easy", columns=2),
+            _s("from_scientific", "easy",
+               group="Standard Form",
+               directions="Write each number in standard form.", columns=2),
+            _s("multiply_divide", "medium",
+               group="Multiplying and Dividing",
+               directions=("Simplify. Write your answer in scientific "
+                           "notation."),
+               workspace="1.6cm", columns=1),
+        ],
+    },
+    "probability": {
+        "name": "Probability",
+        "directions": "Find each probability. Write answers as reduced fractions.",
+        "workspace": "1.8cm",
+        "progression": [
+            # Every problem is a full sentence -- needs the full text width.
+            _s("simple_probability", "easy", columns=1),
+            _s("independent_events", "medium",
+               group="Two Events",
+               directions=("Find each probability. Write answers as reduced "
+                           "fractions."),
+               workspace="2.0cm", columns=1),
+            _s("dependent_events", "hard",
+               group="Two Events",
+               directions=("Find each probability. Write answers as reduced "
+                           "fractions."),
+               workspace="2.0cm", columns=1),
         ],
     },
     "roots": {
@@ -261,6 +319,16 @@ CATALOG: Dict[str, dict] = {
                directions=("Find the circumference of each circle. Leave your "
                            "answer in terms of $\\pi$."),
                workspace="1.6cm", columns=1),
+            _s("pythagorean_hypotenuse", "medium",
+               group="Pythagorean Theorem",
+               directions=("Find the missing side length $x$ of each right "
+                           "triangle."),
+               workspace="1.8cm", columns=1),
+            _s("pythagorean_leg", "hard",
+               group="Pythagorean Theorem",
+               directions=("Find the missing side length $x$ of each right "
+                           "triangle."),
+               workspace="1.8cm", columns=1),
             _s("volume_rect_prism", "medium",
                group="Volume of Prisms",
                directions="Find the volume of each prism.",

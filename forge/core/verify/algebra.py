@@ -1,156 +1,30 @@
-"""Independent re-derivation of every answer.
-
-The rule: verification must not trust the generator's arithmetic. Wherever
-possible we parse ``question_latex`` back into sympy from the *rendered string
-the student will see* and re-derive the answer from scratch. A mismatch fails
-the build; no PDF is ever emitted with an unverified key.
+"""Verification strategies for symbolic work: equations, inequalities,
+expressions, lines, systems, quadratics, radicals, logs and sequences.
 """
 
 from __future__ import annotations
 
 import re
-from typing import List
 
 import sympy as sp
-from sympy.parsing.sympy_parser import (
-    implicit_multiplication,
-    parse_expr,
-    standard_transformations,
+
+from ..problem import Problem
+
+from .parsing import (
+    VerificationError,
+    _FRAC,
+    _POINT,
+    _REL_CLASS,
+    _REL_OP,
+    _REL_TOKEN,
+    _equal,
+    _match_group,
+    _nums,
+    _split_relation,
+    latex_relation_to_sympy,
+    latex_to_sympy,
 )
 
-from .problem import Problem, normalize
-
-_TRANSFORMS = standard_transformations + (implicit_multiplication,)
-
-
-class VerificationError(AssertionError):
-    pass
-
-
-# --------------------------------------------------------------------------
-# LaTeX -> sympy
-# --------------------------------------------------------------------------
-
-_FRAC = re.compile(r"\\d?frac\s*(?=\{)")
-
-
-def _match_group(s: str, i: int):
-    """Return (contents, index_after) for the brace group starting at s[i]=='{'."""
-    if i >= len(s) or s[i] != "{":
-        raise VerificationError(f"expected a brace group at position {i} of {s!r}")
-    depth = 0
-    for j in range(i, len(s)):
-        if s[j] == "{":
-            depth += 1
-        elif s[j] == "}":
-            depth -= 1
-            if depth == 0:
-                return s[i + 1 : j], j + 1
-    raise VerificationError(f"unbalanced braces in {s!r}")
-
-
-_TRAILING_INT = re.compile(r"(?<![\d.)])(\d+)\s*$")
-
-
-def _expand_fracs(s: str) -> str:
-    """Rewrite \\frac{a}{b} as ((a)/(b)), handling nested braces.
-
-    A bare integer immediately before the fraction is a mixed number, and the
-    whole thing is parenthesised: ``1 - 2\\frac{1}{3}`` must become
-    ``1 - (2 + 1/3)``, not ``1 - 2 + 1/3``. Our renderers never put a bare
-    integer before \\frac for a fractional coefficient (those come out as
-    ``\\frac{2}{3}x``), so absorbing it is unambiguous here.
-    """
-    while True:
-        m = _FRAC.search(s)
-        if not m:
-            return s
-        numer, after = _match_group(s, m.end())
-        denom, end = _match_group(s, after)
-        body = f"(({_expand_fracs(numer)})/({_expand_fracs(denom)}))"
-
-        head = s[: m.start()]
-        whole = _TRAILING_INT.search(head)
-        if whole:
-            head = head[: whole.start()]
-            body = f"({whole.group(1)} + {body})"
-        s = f"{head}{body}{s[end:]}"
-
-
-def latex_to_sympy(latex: str) -> sp.Expr:
-    """Parse the subset of LaTeX these worksheets emit into a sympy expression."""
-    s = latex.strip().strip("$").strip()
-    s = s.replace(r"\left", "").replace(r"\right", "")
-    s = s.replace(r"\cdot", "*").replace(r"\times", "*").replace(r"\div", "/")
-    # Absolute value bars: |...| -> Abs(...). Our renderers never nest bars,
-    # so a left-to-right non-greedy pairing is unambiguous.
-    s = re.sub(r"\|([^|]+)\|", r"Abs(\1)", s)
-    s = re.sub(r"\\[,;:!]", " ", s)
-    s = _expand_fracs(s)
-    s = s.replace("^", "**")
-    # nth roots: \sqrt[3]{x} -> real_root(x, 3), so negative radicands (cube
-    # roots) evaluate to the real root, not sympy's principal complex root.
-    # Must run before the plain \sqrt rule.
-    s = re.sub(r"\\sqrt\[(\d+)\]\{([^{}]*)\}", r"real_root((\2),\1)", s)
-    s = re.sub(r"\\sqrt\s*\{([^{}]*)\}", r"sqrt(\1)", s)
-    s = s.replace(r"\%", "").replace("%", "")
-    s = s.replace("{", "(").replace("}", ")")
-    if "\\" in s:
-        raise VerificationError(f"unparsed LaTeX macro in {latex!r} -> {s!r}")
-    try:
-        expr = parse_expr(s, transformations=_TRANSFORMS, evaluate=True)
-    except (SyntaxError, TypeError, sp.SympifyError) as e:
-        raise VerificationError(f"cannot parse {latex!r} -> {s!r}: {e}") from None
-    return expr
-
-
-_REL_TOKEN = re.compile(r"\\geq|\\leq|\\ge|\\le|\\gt|\\lt|<=|>=|<|>")
-_REL_OP = {
-    r"\geq": ">=", r"\leq": "<=", r"\ge": ">=", r"\le": "<=",
-    r"\gt": ">", r"\lt": "<", "<=": "<=", ">=": ">=", "<": "<", ">": ">",
-}
-_REL_CLASS = {"<": sp.Lt, "<=": sp.Le, ">": sp.Gt, ">=": sp.Ge}
-
-
-def _split_relation(s: str):
-    """Split ``lhs REL rhs`` on the first relation token, before the macro
-    guard in :func:`latex_to_sympy` would trip on the backslash."""
-    m = _REL_TOKEN.search(s)
-    if not m:
-        raise VerificationError(f"no relation symbol found in {s!r}")
-    return s[: m.start()], _REL_OP[m.group()], s[m.end() :]
-
-
-def latex_relation_to_sympy(latex: str) -> sp.core.relational.Relational:
-    """Parse ``x \\ge 11`` (or ``<``, ``>``, ``\\le``) into a sympy relation."""
-    s = latex.strip().strip("$").strip()
-    lhs_text, op, rhs_text = _split_relation(s)
-    lhs = latex_to_sympy(lhs_text)
-    rhs = latex_to_sympy(rhs_text)
-    return _REL_CLASS[op](lhs, rhs)
-
-
-def _mixed_to_sympy(latex: str) -> sp.Expr:
-    """Mixed numbers ``1\\frac{7}{12}`` mean 1 + 7/12, not 1 * 7/12."""
-    s = latex.strip().strip("$").strip()
-    m = re.fullmatch(r"(-?)(\d+)\s*(\\d?frac\{[^{}]*\}\{[^{}]*\})", s)
-    if m:
-        sign = -1 if m.group(1) == "-" else 1
-        return sign * (sp.Integer(m.group(2)) + latex_to_sympy(m.group(3)))
-    return latex_to_sympy(s)
-
-
-def _equal(a, b) -> bool:
-    try:
-        diff = sp.simplify(sp.nsimplify(a) - sp.nsimplify(b))
-        return bool(diff == 0)
-    except (TypeError, sp.SympifyError):
-        return False
-
-
-# --------------------------------------------------------------------------
-# Strategies
-# --------------------------------------------------------------------------
 
 def _v_evaluate(p: Problem) -> None:
     """Re-evaluate the printed expression and compare to the stated answer."""
@@ -161,7 +35,6 @@ def _v_evaluate(p: Problem) -> None:
             f"key says {p.answer_expr}"
         )
 
-
 def _v_simplify(p: Problem) -> None:
     """The answer must be algebraically identical to the printed expression."""
     got = latex_to_sympy(p.verify.get("expr", p.question_latex))
@@ -169,7 +42,6 @@ def _v_simplify(p: Problem) -> None:
         raise VerificationError(
             f"{p.topic}/{p.subskill}: {p.question_latex} != {p.answer_expr}"
         )
-
 
 def _v_solve(p: Problem) -> None:
     """Re-solve the printed relation and require exactly the keyed solution."""
@@ -187,7 +59,6 @@ def _v_solve(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: {p.question_latex} solves to {sols[0]}, "
             f"key says {p.answer_expr}"
         )
-
 
 def _v_abs_solve(p: Problem) -> None:
     """Re-solve the printed |...| = c equation; require exactly the keyed roots."""
@@ -216,7 +87,6 @@ def _v_abs_solve(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: printed key {p.answer_latex!r} states roots "
             f"{printed}, but {p.question_latex} solves to {sols}"
         )
-
 
 def _v_inequality(p: Problem) -> None:
     """Re-derive the solution set from the PRINTED question and the PRINTED
@@ -262,10 +132,6 @@ def _v_inequality(p: Problem) -> None:
             f"but verify['solution_set'] says {keyed}"
         )
 
-
-_POINT = re.compile(r"\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)")
-
-
 def _points_in(p: Problem):
     pts = [(sp.Integer(a), sp.Integer(b)) for a, b in _POINT.findall(p.question_latex)]
     if len(pts) != 2:
@@ -279,7 +145,6 @@ def _points_in(p: Problem):
         )
     return (x1, y1), (x2, y2)
 
-
 def _v_slope_from_points(p: Problem) -> None:
     """Recompute the slope from the points as *printed* on the worksheet."""
     (x1, y1), (x2, y2) = _points_in(p)
@@ -288,7 +153,6 @@ def _v_slope_from_points(p: Problem) -> None:
         raise VerificationError(
             f"{p.topic}/{p.subskill}: {p.question_latex} has slope {m}, key says {p.answer_expr}"
         )
-
 
 def _v_line_through_points(p: Problem) -> None:
     """The keyed equation must actually pass through both printed points."""
@@ -304,7 +168,6 @@ def _v_line_through_points(p: Problem) -> None:
             raise VerificationError(
                 f"{p.topic}/{p.subskill}: key {p.answer_latex} misses point ({px}, {py})"
             )
-
 
 def _v_slope_intercept(p: Problem) -> None:
     """Read m and b straight off the printed equation."""
@@ -322,7 +185,6 @@ def _v_slope_intercept(p: Problem) -> None:
         )
     _v_check_printed_m_b(p, m, b)
 
-
 def _v_check_printed_m_b(p: Problem, m, b) -> None:
     """The PRINTED ``m = ..., \\quad b = ...`` key must match the re-derived
     ``m``/``b`` -- ``answer_expr`` alone doesn't catch a rendering bug."""
@@ -337,7 +199,6 @@ def _v_check_printed_m_b(p: Problem, m, b) -> None:
             f"{p.topic}/{p.subskill}: printed key {p.answer_latex!r} reads m={printed_m}, "
             f"b={printed_b}; re-derived m={m}, b={b}"
         )
-
 
 def _v_slope_and_line(p: Problem) -> None:
     """Recompute slope from the printed points; check both stated m and line."""
@@ -364,7 +225,6 @@ def _v_slope_and_line(p: Problem) -> None:
                 f"{p.topic}/{p.subskill}: key {p.answer_latex} misses point ({px}, {py})"
             )
 
-
 def _v_slope_intercept_standard(p: Problem) -> None:
     """Solve the printed standard-form equation for y independently."""
     text = p.question_latex.strip().strip("$")
@@ -389,7 +249,6 @@ def _v_slope_intercept_standard(p: Problem) -> None:
             f"key says m={got_m}, b={got_b}"
         )
     _v_check_printed_m_b(p, m, b)
-
 
 def _v_point_slope(p: Problem) -> None:
     """The keyed line must have the printed slope and hit the printed point."""
@@ -420,269 +279,50 @@ def _v_point_slope(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: key {p.answer_latex} misses point ({px}, {py})"
         )
 
+def _three_part_solution(text: str, var: sp.Symbol):
+    """Solve ``a REL expr REL c`` by intersecting its two halves.
 
-_PERCENT_OF = re.compile(r"(-?[\d.]+)\s*\\?%\s*\$?\s*of\s*\$?\s*(-?[\d.]+)")
-_CHANGE = re.compile(r"from\s*\$?\\?\$?(-?[\d.]+)\$?\s*to\s*\$?\\?\$?(-?[\d.]+)")
-
-
-def _v_percent_of(p: Problem) -> None:
-    m = _PERCENT_OF.search(p.question_latex)
-    if not m:
-        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read {p.question_latex!r}")
-    pct, whole = sp.Rational(m.group(1)), sp.Rational(m.group(2))
-    if not _equal(pct / 100 * whole, p.answer_expr):
+    ``solve_univariate_inequality`` takes one relation at a time, so a
+    conjunction is solved as two sets and intersected -- which is also
+    literally what the compound inequality means.
+    """
+    s = text.strip().strip("$").strip()
+    ops = list(_REL_TOKEN.finditer(s))
+    if len(ops) != 2:
         raise VerificationError(
-            f"{p.topic}/{p.subskill}: {p.question_latex} -> {pct / 100 * whole}, "
+            f"expected a three-part inequality, found {len(ops)} relations in {text!r}"
+        )
+    left = s[: ops[0].start()]
+    middle = s[ops[0].end(): ops[1].start()]
+    right = s[ops[1].end():]
+    l_expr, m_expr, r_expr = (latex_to_sympy(t) for t in (left, middle, right))
+    op1, op2 = (_REL_OP[o.group(0)] for o in ops)
+    first = sp.solve_univariate_inequality(
+        _REL_CLASS[op1](l_expr, m_expr), var, relational=False
+    )
+    second = sp.solve_univariate_inequality(
+        _REL_CLASS[op2](m_expr, r_expr), var, relational=False
+    )
+    return first.intersect(second)
+
+def _v_compound_inequality(p: Problem) -> None:
+    var = sp.Symbol("x")
+    solved = _three_part_solution(p.question_latex, var)
+    if solved != p.answer_expr:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} solves to {solved}, "
             f"key says {p.answer_expr}"
         )
-
-
-def _v_percent_change(p: Problem) -> None:
-    m = _CHANGE.search(p.question_latex)
-    if not m:
-        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read {p.question_latex!r}")
-    old, new = sp.Rational(m.group(1)), sp.Rational(m.group(2))
-    if old == 0:
-        raise VerificationError(f"{p.topic}/{p.subskill}: percent change from zero")
-    change = (new - old) / old * 100
-    if not _equal(change, p.answer_expr):
+    # The printed key is its own three-part inequality; solving it must give
+    # the same set, or the rendering flipped a bound the answer_expr did not.
+    printed = _three_part_solution(p.answer_latex, var)
+    if printed != solved:
         raise VerificationError(
-            f"{p.topic}/{p.subskill}: {p.question_latex} -> {change}%, key says {p.answer_expr}"
+            f"{p.topic}/{p.subskill}: printed key {p.answer_latex!r} reads as "
+            f"{printed}, but the solution set is {solved}"
         )
-
-
-def _v_word(p: Problem) -> None:
-    """Word problems: re-solve the model, and confirm it matches the prose.
-
-    A templated sentence cannot be parsed back the way an expression can, so
-    this does two things instead: it re-solves the stated equation from
-    scratch, and it asserts every sampled quantity actually appears in the
-    question text -- catching the case where the model and the prose drift.
-    """
-    var = sp.Symbol(p.verify.get("var", "x"))
-    lhs = latex_to_sympy(p.verify["lhs"])
-    rhs = latex_to_sympy(p.verify["rhs"])
-    sols = sp.solve(sp.Eq(lhs, rhs), var)
-    if len(sols) != 1 or not _equal(sols[0], p.answer_expr):
-        raise VerificationError(
-            f"{p.topic}/{p.subskill}: model {p.verify['lhs']} = {p.verify['rhs']} "
-            f"solves to {sols}, key says {p.answer_expr}"
-        )
-    for q in p.verify.get("quantities", []):
-        if str(q) not in p.question_latex:
-            raise VerificationError(
-                f"{p.topic}/{p.subskill}: quantity {q} is in the model but not in the "
-                f"prose: {p.question_latex!r}"
-            )
-
-
-# Matches a bare "$5$", a dollar amount "$\$5$", or a percent "$5\%$" --
-# always the integer between the outer math delimiters, in reading order.
-_NUM = re.compile(r"\$\\?\$?(-?\d+)\\?%?\$")
-
-
-def _nums(text: str) -> List[sp.Integer]:
-    """Pull every printed integer out of a prose question, in reading order."""
-    return [sp.Integer(x) for x in _NUM.findall(text)]
-
-
-def _v_geo_rectangle_area(p: Problem) -> None:
-    l, w = _nums(p.question_latex)
-    if not _equal(l * w, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: area should be {l * w}")
-
-
-def _v_geo_square_area(p: Problem) -> None:
-    (s,) = _nums(p.question_latex)
-    if not _equal(s * s, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: area should be {s * s}")
-
-
-def _circle_radius(p: Problem) -> sp.Integer:
-    """Read the radius back off the figure's own label.
-
-    The figure prints ``r = 7`` or ``d = 14``; which one it is determines the
-    answer, so it is re-read here rather than taken on the generator's word.
-    A diameter that is not even would make the radius fractional and is a bug
-    in the generator, not a legal problem.
-    """
-    m = re.search(r"([rd])\s*=\s*(\d+)", p.question_latex)
-    if m is None:
-        raise VerificationError(
-            f"{p.topic}/{p.subskill}: circle figure has no 'r =' or 'd =' label"
-        )
-    name, n = m.group(1), sp.Integer(m.group(2))
-    if name == "r":
-        return n
-    if n % 2 != 0:
-        raise VerificationError(
-            f"{p.topic}/{p.subskill}: odd diameter {n} gives a fractional radius"
-        )
-    return n / 2
-
-
-def _v_geo_circle_area(p: Problem) -> None:
-    r = _circle_radius(p)
-    expected = sp.pi * r**2
-    if not _equal(expected, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: area should be {expected}")
-
-
-def _v_geo_circle_circumference(p: Problem) -> None:
-    r = _circle_radius(p)
-    expected = 2 * sp.pi * r
-    if not _equal(expected, p.answer_expr):
-        raise VerificationError(
-            f"{p.topic}/{p.subskill}: circumference should be {expected}"
-        )
-
-
-def _v_geo_triangle_area(p: Problem) -> None:
-    b, h = _nums(p.question_latex)
-    expected = sp.Rational(b * h, 2)
-    if not _equal(expected, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: area should be {expected}")
-
-
-def _v_geo_trapezoid_area(p: Problem) -> None:
-    b1, b2, h = _nums(p.question_latex)
-    expected = sp.Rational((b1 + b2) * h, 2)
-    if not _equal(expected, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: area should be {expected}")
-
-
-def _v_geo_rect_prism_volume(p: Problem) -> None:
-    l, w, h = _nums(p.question_latex)
-    expected = l * w * h
-    if not _equal(expected, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: volume should be {expected}")
-
-
-def _v_geo_rect_prism_sa(p: Problem) -> None:
-    l, w, h = _nums(p.question_latex)
-    expected = 2 * (l * w + l * h + w * h)
-    if not _equal(expected, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: surface area should be {expected}")
-
-
-def _v_geo_tri_prism_volume(p: Problem) -> None:
-    a, b, c, length = _nums(p.question_latex)
-    expected = sp.Rational(a * b, 2) * length
-    if not _equal(expected, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: volume should be {expected}")
-
-
-def _v_geo_tri_prism_sa(p: Problem) -> None:
-    a, b, c, length = _nums(p.question_latex)
-    expected = a * b + (a + b + c) * length
-    if not _equal(expected, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: surface area should be {expected}")
-
-
-def _classify_value(value) -> set:
-    labels: set = set()
-    if bool(value.is_rational):
-        labels.add("rational")
-        if bool(value.is_integer):
-            labels.add("integer")
-            if value >= 0:
-                labels.add("whole")
-    else:
-        labels.add("irrational")
-    return labels
-
-
-def _v_classify(p: Problem) -> None:
-    value = latex_to_sympy(p.question_latex)
-    got = _classify_value(value)
-    expected = set(p.answer_expr)
-    if got != expected:
-        raise VerificationError(
-            f"{p.topic}/{p.subskill}: {p.question_latex} classifies as {got}, "
-            f"key says {expected}"
-        )
-    # The PRINTED key ("Rational, Integer, Whole") must name the same labels.
-    printed = {s.strip().lower() for s in p.answer_latex.strip("$").split(",") if s.strip()}
-    if printed != got:
-        raise VerificationError(
-            f"{p.topic}/{p.subskill}: printed key {p.answer_latex!r} says {printed}, "
-            f"but {p.question_latex} classifies as {got}"
-        )
-
-
-def _v_estimate_percent(p: Problem) -> None:
-    # order in the prose: actual_pct, actual_whole, friendly_pct, friendly_whole
-    _, _, fpct, fwhole = _nums(p.question_latex)
-    expected = sp.Rational(fpct, 100) * fwhole
-    if not _equal(expected, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: estimate should be {expected}")
-
-
-def _v_markup_discount(p: Problem) -> None:
-    original, pct = _nums(p.question_latex)
-    sign = -1 if "discount" in p.question_latex.lower() or "off" in p.question_latex.lower() \
-        or "sale" in p.question_latex.lower() or "clearance" in p.question_latex.lower() else 1
-    expected = original + sign * sp.Rational(pct, 100) * original
-    if not _equal(expected, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: new price should be {expected}")
-
-
-def _v_percent_error(p: Problem) -> None:
-    actual, measured = _nums(p.question_latex)
-    if actual == 0:
-        raise VerificationError(f"{p.topic}/{p.subskill}: percent error from zero actual value")
-    expected = sp.Abs(measured - actual) / actual * 100
-    if not _equal(expected, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: percent error should be {expected}")
-
-
-def _v_commission(p: Problem) -> None:
-    pct, sales = _nums(p.question_latex)
-    expected = sp.Rational(pct, 100) * sales
-    if not _equal(expected, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: commission should be {expected}")
-
-
-def _v_tax_tip(p: Problem) -> None:
-    amount, pct = _nums(p.question_latex)
-    expected = amount + sp.Rational(pct, 100) * amount
-    if not _equal(expected, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: total should be {expected}")
-
-
-def _v_unit_rate(p: Problem) -> None:
-    total, quantity = _nums(p.question_latex)
-    if quantity == 0:
-        raise VerificationError(f"{p.topic}/{p.subskill}: divide by zero quantity")
-    expected = sp.Rational(total, quantity)
-    if not _equal(expected, p.answer_expr):
-        raise VerificationError(f"{p.topic}/{p.subskill}: unit rate should be {expected}")
-
-
-def _v_unit_price_comparison(p: Problem) -> None:
-    price_a, qty_a, price_b, qty_b = _nums(p.question_latex)
-    if qty_a == 0 or qty_b == 0:
-        raise VerificationError(f"{p.topic}/{p.subskill}: divide by zero quantity")
-    rate_a, rate_b = sp.Rational(price_a, qty_a), sp.Rational(price_b, qty_b)
-    if rate_a == rate_b:
-        raise VerificationError(f"{p.topic}/{p.subskill}: tied unit prices, no unique better buy")
-    expected = "A" if rate_a < rate_b else "B"
-    if str(p.answer_expr).strip().upper().replace("OPTION ", "") != expected:
-        raise VerificationError(
-            f"{p.topic}/{p.subskill}: better buy is Option {expected}, key says {p.answer_expr}"
-        )
-    # Check the PRINTED text specifically, not just answer_expr -- catches a
-    # rendering bug even though today the two strings are identical.
-    printed = str(p.answer_latex).strip().upper().replace("OPTION ", "")
-    if printed != expected:
-        raise VerificationError(
-            f"{p.topic}/{p.subskill}: better buy is Option {expected}, "
-            f"printed key says {p.answer_latex!r}"
-        )
-
 
 _COMPOUND = re.compile(r"(-?\d+)\s*(<=|\\le|<)\s*x\s*(<=|\\le|<)\s*(-?\d+)")
-
 
 def _v_abs_inequality(p: Problem) -> None:
     """Re-derive the printed |...| inequality's solution set with sympy;
@@ -725,7 +365,6 @@ def _v_abs_inequality(p: Problem) -> None:
             f"but printed key {p.answer_latex!r} reads as {printed_solved}"
         )
 
-
 def _v_point_in_inequality(p: Problem) -> None:
     """Independently evaluate whether the printed point satisfies the
     printed inequality; require the printed Yes/No key to agree."""
@@ -747,7 +386,6 @@ def _v_point_in_inequality(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: point ({px}, {py}) {'is' if is_sol else 'is not'} "
             f"a solution of {ineq_part}, but key says {answer_text!r}"
         )
-
 
 def _v_system_point_in_inequality(p: Problem) -> None:
     """Same as :func:`_v_point_in_inequality`, but the point must satisfy
@@ -783,9 +421,7 @@ def _v_system_point_in_inequality(p: Problem) -> None:
             f"a solution of the system, but key says {answer_text!r}"
         )
 
-
 _CASES = re.compile(r"\\begin\{cases\}(.*?)\\end\{cases\}", re.S)
-
 
 def _parse_system(question_latex: str):
     """Pull the two equations out of a printed ``\\begin{cases}...\\end{cases}``
@@ -806,7 +442,6 @@ def _parse_system(question_latex: str):
         lhs_t, rhs_t = part.split("=", 1)
         eqs.append(sp.Eq(latex_to_sympy(lhs_t), latex_to_sympy(rhs_t)))
     return eqs
-
 
 def _v_solve_system(p: Problem) -> None:
     """Re-solve the printed system with ``linsolve`` and require the keyed point."""
@@ -840,7 +475,6 @@ def _v_solve_system(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: printed key {p.answer_latex!r} states "
             f"({printed_x}, {printed_y}), re-derived is ({xv}, {yv})"
         )
-
 
 def _v_classify_system(p: Problem) -> None:
     """Re-classify the printed system with ``linsolve``; require the printed
@@ -879,7 +513,6 @@ def _v_classify_system(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: key states point ({px}, {py}), re-derived is ({xv}, {yv})"
         )
 
-
 def _v_solve_quadratic(p: Problem) -> None:
     """Re-solve the printed ``... = 0`` and require exactly the keyed roots."""
     text = p.question_latex.strip().strip("$")
@@ -916,7 +549,6 @@ def _v_solve_quadratic(p: Problem) -> None:
             f"re-derived {sols}"
         )
 
-
 def _v_quadratic_vertex(p: Problem) -> None:
     """Recompute the vertex from the printed standard-form equation."""
     text = p.question_latex.strip().strip("$")
@@ -939,7 +571,6 @@ def _v_quadratic_vertex(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: vertex should be ({h}, {k}), key says ({ph}, {pk})"
         )
 
-
 def _rational_equal(a, b) -> bool:
     """Equality for expressions that may be rational functions of x -- plain
     ``_equal`` runs ``nsimplify``, which targets numeric values, not
@@ -948,7 +579,6 @@ def _rational_equal(a, b) -> bool:
         return sp.simplify(sp.cancel(a - b)) == 0
     except (TypeError, sp.SympifyError):
         return False
-
 
 def _extract_fracs(text: str) -> list:
     """Find every ``\\frac{...}{...}``/``\\dfrac{...}{...}`` in text, using the
@@ -960,7 +590,6 @@ def _extract_fracs(text: str) -> list:
         denom, _end = _match_group(text, after)
         out.append((numer, denom))
     return out
-
 
 def _v_simplify_rational(p: Problem) -> None:
     """Cancel the printed fraction independently; require the same reduced
@@ -993,7 +622,6 @@ def _v_simplify_rational(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: denominator is zero at {roots}, key excludes {printed_excl}"
         )
 
-
 def _v_multiply_rational(p: Problem) -> None:
     """Multiply and cancel the two printed fractions independently."""
     text = p.question_latex.strip().strip("$")
@@ -1015,7 +643,6 @@ def _v_multiply_rational(p: Problem) -> None:
             f"key says {printed}"
         )
 
-
 def _complex_from_text(s: str) -> sp.Expr:
     """Parse an "a + bi" / "a - bi" / "bi" / "a" fragment into a sympy
     expression over ``I`` -- these generators only ever emit that shape, so a
@@ -1023,7 +650,6 @@ def _complex_from_text(s: str) -> sp.Expr:
     s = s.strip().strip("$").replace("i", "I")
     s = re.sub(r"(\d)I", r"\1*I", s)
     return latex_to_sympy(s)
-
 
 def _v_complex_arith(p: Problem) -> None:
     """Re-parse the two printed complex numbers and the operator; recompute
@@ -1048,7 +674,6 @@ def _v_complex_arith(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: {p.question_latex} = {got}, key says {printed}"
         )
 
-
 def _v_power_of_i(p: Problem) -> None:
     m = re.search(r"i\^\{(\d+)\}", p.question_latex)
     if not m:
@@ -1060,7 +685,6 @@ def _v_power_of_i(p: Problem) -> None:
         raise VerificationError(
             f"{p.topic}/{p.subskill}: i^{n} = {expected}, key says {printed}"
         )
-
 
 def _v_solve_exponential(p: Problem) -> None:
     """Re-solve the printed a^x = c independently."""
@@ -1088,7 +712,6 @@ def _v_solve_exponential(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: {p.question_latex} solves to {sols[0]}, key says {printed}"
         )
 
-
 def _v_solve_logarithmic(p: Problem) -> None:
     """Re-derive x = b**c from the printed log_b(x) = c and require the same key."""
     text = p.question_latex.strip().strip("$")
@@ -1106,9 +729,7 @@ def _v_solve_logarithmic(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: log_{{{b}}}(x)={c} solves to x={expected}, key says {printed}"
         )
 
-
 _LOG = re.compile(r"\\log_\{(\d+)\}\(([^()]*)\)")
-
 
 def _v_condense_log(p: Problem) -> None:
     """Independently recompute the log-product identity numerically/symbolically."""
@@ -1132,13 +753,11 @@ def _v_condense_log(p: Problem) -> None:
             f"key {p.answer_latex!r} = {sp.N(rhs_val)}"
         )
 
-
 def _v_arithmetic_nth_term(p: Problem) -> None:
     a1, d, n = _nums(p.question_latex)
     expected = a1 + (n - 1) * d
     if not _equal(expected, p.answer_expr):
         raise VerificationError(f"{p.topic}/{p.subskill}: term should be {expected}")
-
 
 def _v_geometric_nth_term(p: Problem) -> None:
     a1, r, n = _nums(p.question_latex)
@@ -1146,252 +765,8 @@ def _v_geometric_nth_term(p: Problem) -> None:
     if not _equal(expected, p.answer_expr):
         raise VerificationError(f"{p.topic}/{p.subskill}: term should be {expected}")
 
-
 def _v_arithmetic_series_sum(p: Problem) -> None:
     a1, d, n = _nums(p.question_latex)
     expected = sp.Rational(n, 2) * (2 * a1 + (n - 1) * d)
     if not _equal(expected, p.answer_expr):
         raise VerificationError(f"{p.topic}/{p.subskill}: sum should be {expected}")
-
-
-def _v_special_triangle_hyp(p: Problem) -> None:
-    """Recompute the hypotenuse from the printed triangle type and leg."""
-    text = p.question_latex
-    is_306090 = "30" in text and "60" in text
-    nums = _nums(text)
-    if not nums:
-        raise VerificationError(f"{p.topic}/{p.subskill}: no leg length found in {text!r}")
-    leg = nums[-1]
-    expected = 2 * leg if is_306090 else leg * sp.sqrt(2)
-
-    printed = latex_to_sympy(p.answer_latex)
-    if not _equal(expected, printed):
-        raise VerificationError(
-            f"{p.topic}/{p.subskill}: hypotenuse should be {expected}, key says {printed}"
-        )
-
-
-def _v_right_triangle_find_angle(p: Problem) -> None:
-    """Classify which ratio applies from the printed wording (never from
-    generator state), then re-derive the angle with the matching inverse
-    trig function."""
-    text = p.question_latex
-    nums = _nums(text)
-    has_opp, has_adj, has_hyp = "opposite" in text, "adjacent" in text, "hypotenuse" in text
-
-    if has_opp and has_adj and not has_hyp:
-        expected = (180 / sp.pi) * sp.atan(sp.Rational(nums[0], nums[1]))
-    elif has_opp and has_hyp:
-        expected = (180 / sp.pi) * sp.asin(sp.Rational(nums[0], nums[1]))
-    elif has_adj and has_hyp:
-        expected = (180 / sp.pi) * sp.acos(sp.Rational(nums[0], nums[1]))
-    else:
-        raise VerificationError(f"{p.topic}/{p.subskill}: cannot classify triangle in {text!r}")
-    expected = sp.nsimplify(expected)
-
-    m = re.search(r"(-?\d+)\^\\circ", p.answer_latex)
-    if not m:
-        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read key {p.answer_latex!r}")
-    printed = sp.Integer(m.group(1))
-    if not _equal(expected, printed):
-        raise VerificationError(
-            f"{p.topic}/{p.subskill}: angle should be {expected}, key says {printed}"
-        )
-
-
-_PI_FRAC = re.compile(r"\\dfrac\{(-?\d*)\\pi\}\{(\d+)\}")
-_PI_PLAIN = re.compile(r"^(-?\d*)\\pi$")
-
-
-def _parse_pi_multiple(text: str) -> sp.Rational:
-    """Parse a bare ``"0"``, ``"\\pi"``/``"-\\pi"``/``"2\\pi"``, or
-    ``"\\dfrac{n\\pi}{d}"`` fragment into the rational multiple of pi it
-    represents."""
-    text = text.strip().strip("$")
-    if text == "0":
-        return sp.Integer(0)
-
-    def _coef(s: str) -> int:
-        return 1 if s == "" else (-1 if s == "-" else int(s))
-
-    m = _PI_FRAC.match(text)
-    if m:
-        return sp.Rational(_coef(m.group(1)), int(m.group(2)))
-    m = _PI_PLAIN.match(text)
-    if m:
-        return sp.Integer(_coef(m.group(1)))
-    raise VerificationError(f"cannot parse pi-fraction {text!r}")
-
-
-def _v_degree_radian_conversion(p: Problem) -> None:
-    direction = p.verify.get("direction")
-    if direction == "to_radians":
-        m = re.match(r"\$(-?\d+)\^\\circ\$", p.question_latex)
-        if not m:
-            raise VerificationError(f"{p.topic}/{p.subskill}: cannot parse {p.question_latex!r}")
-        deg = int(m.group(1))
-        want = sp.Rational(deg, 180)
-        got = _parse_pi_multiple(p.answer_latex)
-    else:
-        got_frac = _parse_pi_multiple(p.question_latex)
-        want = got_frac * 180
-        m = re.match(r"\$(-?\d+)\^\\circ\$", p.answer_latex)
-        if not m:
-            raise VerificationError(f"{p.topic}/{p.subskill}: cannot read key {p.answer_latex!r}")
-        got = sp.Integer(m.group(1))
-
-    if want != got:
-        raise VerificationError(
-            f"{p.topic}/{p.subskill}: {p.question_latex} -> expected {want}, key gives {got}"
-        )
-
-
-def _v_exact_trig_value(p: Problem) -> None:
-    m = re.match(r"\$\\(sin|cos|tan)\((-?\d+)\^\\circ\)\$", p.question_latex)
-    if not m:
-        raise VerificationError(f"{p.topic}/{p.subskill}: cannot parse {p.question_latex!r}")
-    func = {"sin": sp.sin, "cos": sp.cos, "tan": sp.tan}[m.group(1)]
-    angle = int(m.group(2))
-    expected = sp.nsimplify(func(sp.rad(angle)))
-    printed = latex_to_sympy(p.answer_latex)
-    if not _equal(expected, printed):
-        raise VerificationError(
-            f"{p.topic}/{p.subskill}: {p.question_latex} = {expected}, key says {printed}"
-        )
-
-
-STRATEGIES = {
-    "evaluate": _v_evaluate,
-    "simplify": _v_simplify,
-    "solve": _v_solve,
-    "inequality": _v_inequality,
-    "abs_solve": _v_abs_solve,
-    "slope_from_points": _v_slope_from_points,
-    "line_through_points": _v_line_through_points,
-    "slope_intercept": _v_slope_intercept,
-    "slope_and_line": _v_slope_and_line,
-    "slope_intercept_standard": _v_slope_intercept_standard,
-    "point_slope": _v_point_slope,
-    "percent_of": _v_percent_of,
-    "percent_change": _v_percent_change,
-    "word": _v_word,
-    "geo_rectangle_area": _v_geo_rectangle_area,
-    "geo_square_area": _v_geo_square_area,
-    "geo_circle_area": _v_geo_circle_area,
-    "geo_circle_circumference": _v_geo_circle_circumference,
-    "geo_triangle_area": _v_geo_triangle_area,
-    "geo_trapezoid_area": _v_geo_trapezoid_area,
-    "geo_rect_prism_volume": _v_geo_rect_prism_volume,
-    "geo_rect_prism_sa": _v_geo_rect_prism_sa,
-    "geo_tri_prism_volume": _v_geo_tri_prism_volume,
-    "geo_tri_prism_sa": _v_geo_tri_prism_sa,
-    "classify": _v_classify,
-    "estimate_percent": _v_estimate_percent,
-    "markup_discount": _v_markup_discount,
-    "percent_error": _v_percent_error,
-    "commission": _v_commission,
-    "tax_tip": _v_tax_tip,
-    "unit_rate": _v_unit_rate,
-    "unit_price_comparison": _v_unit_price_comparison,
-    "solve_system": _v_solve_system,
-    "classify_system": _v_classify_system,
-    "solve_quadratic": _v_solve_quadratic,
-    "quadratic_vertex": _v_quadratic_vertex,
-    "simplify_rational": _v_simplify_rational,
-    "multiply_rational": _v_multiply_rational,
-    "abs_inequality": _v_abs_inequality,
-    "point_in_inequality": _v_point_in_inequality,
-    "system_point_in_inequality": _v_system_point_in_inequality,
-    "complex_arith": _v_complex_arith,
-    "power_of_i": _v_power_of_i,
-    "solve_exponential": _v_solve_exponential,
-    "solve_logarithmic": _v_solve_logarithmic,
-    "condense_log": _v_condense_log,
-    "arithmetic_nth_term": _v_arithmetic_nth_term,
-    "geometric_nth_term": _v_geometric_nth_term,
-    "arithmetic_series_sum": _v_arithmetic_series_sum,
-    "special_triangle_hypotenuse": _v_special_triangle_hyp,
-    "right_triangle_find_angle": _v_right_triangle_find_angle,
-    "degree_radian_conversion": _v_degree_radian_conversion,
-    "exact_trig_value": _v_exact_trig_value,
-}
-
-
-def _check_verify_fragments(p: Problem) -> None:
-    """Any ``expr``/``lhs``/``rhs`` stored in ``p.verify`` must literally
-    appear in the printed ``question_latex`` -- otherwise nothing enforces
-    that the verified string is what the student actually sees. The one
-    legitimate exception is prose (word problems), where the model is
-    intentionally not literal text in the sentence; those opt out explicitly
-    with ``"prose": True``.
-    """
-    if p.verify.get("prose") is True:
-        return
-    qn = normalize(p.question_latex)
-    for key in ("expr", "lhs", "rhs"):
-        if key in p.verify:
-            frag = normalize(str(p.verify[key]))
-            if frag not in qn:
-                raise VerificationError(
-                    f"{p.topic}/{p.subskill}: verify[{key!r}] = {p.verify[key]!r} does not "
-                    f"appear in the printed question {p.question_latex!r}"
-                )
-
-
-def verify_problem(p: Problem) -> None:
-    kind = p.verify.get("kind", "evaluate")
-    try:
-        strategy = STRATEGIES[kind]
-    except KeyError:
-        raise VerificationError(f"unknown verification kind {kind!r}") from None
-    strategy(p)
-    _check_verify_fragments(p)
-    _check_answer_latex(p)
-
-
-def _check_answer_latex(p: Problem) -> None:
-    """The *printed* key must agree with the verified symbolic answer."""
-    text = p.verify.get("answer_check", p.answer_latex)
-    if text is None:
-        return
-    s = text.strip().strip("$").strip()
-    s = re.sub(r"^[A-Za-z]\s*=\s*", "", s)
-    try:
-        printed = _mixed_to_sympy(s)
-    except (VerificationError, sp.SympifyError, TypeError, SyntaxError):
-        return  # non-numeric keys (e.g. inequalities) are checked by their strategy
-    target = p.answer_expr
-    # Sets, relations, multi-part keys, and plain-string answers (e.g. "Option
-    # A") are their strategy's job, not this check -- only plain numeric or
-    # algebraic expressions compare meaningfully as sympy objects here.
-    opaque = (list, tuple, frozenset, set, sp.Set, sp.core.relational.Relational, str)
-    if isinstance(target, opaque) or isinstance(printed, opaque):
-        return
-    if not _equal(printed, target):
-        raise VerificationError(
-            f"{p.topic}/{p.subskill}: printed key {p.answer_latex!r} reads as {printed}, "
-            f"but the verified answer is {target}"
-        )
-
-
-def verify_all(problems: List[Problem]) -> None:
-    errors = []
-    for p in problems:
-        try:
-            verify_problem(p)
-        except VerificationError as e:
-            errors.append(str(e))
-        except Exception as e:
-            # Any other exception (IndexError, KeyError, ...) means a
-            # generator produced something malformed -- fail this one
-            # problem cleanly instead of crashing the whole build with a
-            # bare traceback.
-            errors.append(
-                f"{p.topic}/{p.subskill}: unexpected {type(e).__name__} during "
-                f"verification: {e}"
-            )
-    if errors:
-        raise VerificationError(
-            f"{len(errors)} answer(s) failed verification:\n  - "
-            + "\n  - ".join(errors)
-        )

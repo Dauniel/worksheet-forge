@@ -4,7 +4,7 @@ These functions only *render* a picture from numbers the generator already
 sampled and used to compute the answer -- they introduce no new randomness
 and no new problem data. Every dimension label placed on a figure is the
 same ``$n$`` token the verifier extracts from the rendered LaTeX (see
-``forge/core/verify.py::_nums``), so the figure and the answer key can never
+``forge/core/verify/parsing.py::_nums``), so the figure and the answer key can never
 disagree: there is exactly one source of truth for each number.
 
 Layout choices below (where the apex sits, how far the back face is offset,
@@ -78,6 +78,28 @@ def circle_fig(value: int, is_diameter: bool) -> str:
         + spoke
         + rf"\fill (0,0) circle (0.045);" "\n"
         + label
+    )
+    return _wrap(body)
+
+
+def right_triangle_fig(a: int, b: int, c: int, unknown: str) -> str:
+    """A right triangle with one side labeled ``x`` instead of its length.
+
+    ``unknown`` is "a", "b", or "c" -- the leg along the base, the vertical
+    leg, or the hypotenuse. The two known sides print their values; the third
+    prints ``x``, so the figure states the problem completely and the
+    verifier can read back which side is missing.
+    """
+    u = _scale(a, b)
+    au, bu = a * u, b * u
+    labels = {"a": str(a), "b": str(b), "c": str(c)}
+    labels[unknown] = "x"
+    body = (
+        rf"\draw (0,0) -- ({au:.3f},0) -- (0,{bu:.3f}) -- cycle;" "\n"
+        + _right_angle(0.0, 0.0) + "\n"
+        rf"\node at ({au / 2:.3f},{-0.35:.3f}) {{${labels['a']}$}};" "\n"
+        rf"\node[anchor=east] at ({-0.15:.3f},{bu / 2:.3f}) {{${labels['b']}$}};" "\n"
+        rf"\node[anchor=south west] at ({au / 2:.3f},{bu / 2:.3f}) {{${labels['c']}$}};"
     )
     return _wrap(body)
 

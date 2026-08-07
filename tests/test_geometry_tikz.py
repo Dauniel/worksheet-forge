@@ -33,6 +33,7 @@ STRIDE = 17  # ~59 seeds per subskill, spread across the whole fuzz range
 GEOMETRY_SUBSKILLS = (
     "area_rectangle", "area_square", "area_triangle", "area_trapezoid",
     "area_circle", "circumference_circle",
+    "pythagorean_hypotenuse", "pythagorean_leg",
     "volume_rect_prism", "surface_area_rect_prism",
     "volume_tri_prism", "surface_area_tri_prism",
 )

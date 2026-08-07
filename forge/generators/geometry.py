@@ -3,7 +3,7 @@
 Every dimension is sampled from ``rng``; the figure is rendered by
 ``forge/core/tikz.py`` directly from those same sampled numbers, so the
 picture and the answer key can never disagree. Verification
-(`forge/core/verify.py`) re-reads the printed *labels* out of the rendered
+(`forge/core/verify/`) re-reads the printed *labels* out of the rendered
 LaTeX (the ``$n$`` tokens drawn on the figure) and re-applies the formula
 independently of whatever the generator computed.
 """
@@ -35,6 +35,12 @@ RADIUS = {"easy": (1, 8), "medium": (2, 12), "hard": (3, 15)}
 # Small, well-proportioned Pythagorean triples only -- nothing that draws as
 # an unusable sliver.
 _PRIMITIVE_TRIPLES = ((3, 4, 5), (6, 8, 10), (5, 12, 13), (8, 15, 17))
+# The Pythagorean subskills draw from a wider pool than the prisms do: they
+# render a plain right triangle rather than an oblique solid, so a taller
+# ratio still reads clearly, and the extra triples buy variety a bare
+# four-triple pool cannot. 20-21-29 is nearly isosceles, 7-24-25 the tallest
+# shape here at roughly 1:3.4.
+_PYTHAG_TRIPLES = _PRIMITIVE_TRIPLES + ((20, 21, 29), (7, 24, 25))
 # medium and hard were identical here, so the two triangular-prism subskills
 # accepted a difficulty and ignored it -- the same latent bug exponents.py:19
 # records. Magnitude is free to grow: tikz._scale normalizes every figure to a
@@ -44,8 +50,8 @@ _PRIMITIVE_TRIPLES = ((3, 4, 5), (6, 8, 10), (5, 12, 13), (8, 15, 17))
 SCALE = {"easy": (1,), "medium": (1, 2), "hard": (2, 3)}
 
 
-def _triple(rng: random.Random, difficulty: str):
-    a, b, c = pick(rng, _PRIMITIVE_TRIPLES)
+def _triple(rng: random.Random, difficulty: str, pool=_PRIMITIVE_TRIPLES):
+    a, b, c = pick(rng, pool)
     k = pick(rng, SCALE[difficulty])
     return a * k, b * k, c * k
 
@@ -212,3 +218,29 @@ def surface_area_tri_prism(rng: random.Random, difficulty: str) -> Problem:
     )
     value = a * b + (a + b + c) * length
     return _mk(question, value, "surface_area_tri_prism", difficulty, "geo_tri_prism_sa", f"square {unit}")
+
+
+@register("geometry", "pythagorean_hypotenuse")
+def pythagorean_hypotenuse(rng: random.Random, difficulty: str) -> Problem:
+    """Both legs given, hypotenuse unknown.
+
+    Drawn from the same scaled triples as the prisms, so the answer is always
+    a whole number -- an irrational hypotenuse would need a radical answer,
+    which is `roots.simplify_radical`'s job, not this one.
+    """
+    a, b, c = _triple(rng, difficulty, _PYTHAG_TRIPLES)
+    unit = pick(rng, UNITS)
+    question = _caption(unit, "A right triangle.") + tikz.right_triangle_fig(a, b, c, "c")
+    return _mk(question, c, "pythagorean_hypotenuse", difficulty,
+               "geo_pythagorean", unit)
+
+
+@register("geometry", "pythagorean_leg")
+def pythagorean_leg(rng: random.Random, difficulty: str) -> Problem:
+    """Hypotenuse and one leg given, the other leg unknown."""
+    a, b, c = _triple(rng, difficulty, _PYTHAG_TRIPLES)
+    missing = "a" if rng.random() < 0.5 else "b"
+    unit = pick(rng, UNITS)
+    question = _caption(unit, "A right triangle.") + tikz.right_triangle_fig(a, b, c, missing)
+    return _mk(question, a if missing == "a" else b, "pythagorean_leg", difficulty,
+               "geo_pythagorean", unit)
