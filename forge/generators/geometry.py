@@ -244,3 +244,63 @@ def pythagorean_leg(rng: random.Random, difficulty: str) -> Problem:
     question = _caption(unit, "A right triangle.") + tikz.right_triangle_fig(a, b, c, missing)
     return _mk(question, a if missing == "a" else b, "pythagorean_leg", difficulty,
                "geo_pythagorean", unit)
+
+
+# Curved solids. Answers stay exact multiples of pi, like the circles above.
+SOLID_R = {"easy": (1, 12), "medium": (2, 18), "hard": (3, 25)}
+SOLID_H = {"easy": (2, 8), "medium": (3, 12), "hard": (4, 18)}
+
+
+@register("geometry", "volume_cylinder")
+def volume_cylinder(rng: random.Random, difficulty: str) -> Problem:
+    r = rng.randint(*SOLID_R[difficulty])
+    h = rng.randint(*SOLID_H[difficulty])
+    unit = pick(rng, UNITS)
+    question = (
+        f"A cylinder has radius ${r}$ and height ${h}$. "
+        f"All measurements are in {unit}."
+    )
+    return _mk(question, sp.pi * r**2 * h, "volume_cylinder", difficulty,
+               "geo_cylinder_volume", f"cubic {unit}")
+
+
+@register("geometry", "volume_cone")
+def volume_cone(rng: random.Random, difficulty: str) -> Problem:
+    """Height is drawn as a multiple of 3 so V = (1/3)pi r^2 h stays integral."""
+    r = rng.randint(*SOLID_R[difficulty])
+    lo, hi = SOLID_H[difficulty]
+    h = 3 * rng.randint(max(1, lo // 3), max(1, hi // 3))
+    unit = pick(rng, UNITS)
+    question = (
+        f"A cone has radius ${r}$ and height ${h}$. "
+        f"All measurements are in {unit}."
+    )
+    return _mk(question, sp.Rational(1, 3) * sp.pi * r**2 * h, "volume_cone",
+               difficulty, "geo_cone_volume", f"cubic {unit}")
+
+
+@register("geometry", "volume_sphere")
+def volume_sphere(rng: random.Random, difficulty: str) -> Problem:
+    """Any integer radius: (4/3)pi r^3 stays exact, printing as e.g. 500*pi/3.
+
+    Forcing r to a multiple of 3 to clear the fraction left only two radii at
+    easy, so the same sphere kept recurring.
+    """
+    r = rng.randint(*SOLID_R[difficulty])
+    unit = pick(rng, UNITS)
+    question = f"A sphere has radius ${r}$. All measurements are in {unit}."
+    return _mk(question, sp.Rational(4, 3) * sp.pi * r**3, "volume_sphere",
+               difficulty, "geo_sphere_volume", f"cubic {unit}")
+
+
+@register("geometry", "surface_area_cylinder")
+def surface_area_cylinder(rng: random.Random, difficulty: str) -> Problem:
+    r = rng.randint(*SOLID_R[difficulty])
+    h = rng.randint(*SOLID_H[difficulty])
+    unit = pick(rng, UNITS)
+    question = (
+        f"A cylinder has radius ${r}$ and height ${h}$. "
+        f"All measurements are in {unit}."
+    )
+    return _mk(question, 2 * sp.pi * r * (r + h), "surface_area_cylinder",
+               difficulty, "geo_cylinder_sa", f"square {unit}")

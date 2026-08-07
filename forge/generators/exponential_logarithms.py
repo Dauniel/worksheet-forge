@@ -89,3 +89,50 @@ def condense_log(rng: random.Random, difficulty: str) -> Problem:
         difficulty=difficulty,
         verify={"kind": "condense_log"},
     )
+
+
+GROWTH_BASE = {"easy": (2, 3), "medium": (2, 5), "hard": (2, 8)}
+GROWTH_START = {"easy": (2, 20), "medium": (3, 60), "hard": (5, 200)}
+GROWTH_STEPS = {"easy": (2, 4), "medium": (2, 6), "hard": (3, 8)}
+
+
+@register("exponential_logarithms", "growth_decay")
+def growth_decay(rng: random.Random, difficulty: str) -> Problem:
+    """Whole-number exponential growth or decay after n steps.
+
+    Growth multiplies by an integer factor; decay halves (or thirds) from a
+    starting amount chosen as an exact multiple of the factor to the power of
+    n, so the answer is a whole number rather than a rounded decimal.
+    """
+    import sympy as _sp
+
+    factor = rng.randint(*GROWTH_BASE[difficulty])
+    steps = rng.randint(*GROWTH_STEPS[difficulty])
+    unit = pick(rng, ("hours", "days", "weeks", "years"))
+    thing = pick(rng, ("bacteria", "cells", "users", "followers", "plants"))
+
+    if rng.random() < 0.5:
+        start = rng.randint(*GROWTH_START[difficulty])
+        value = start * factor**steps
+        question = (
+            f"A population of ${start}$ {thing} multiplies by ${factor}$ every "
+            f"{unit[:-1]}. How many are there after ${steps}$ {unit}?"
+        )
+    else:
+        # Decay: start from a multiple of factor^steps so every step is exact.
+        end = rng.randint(1, max(2, GROWTH_START[difficulty][1] // 4))
+        start = end * factor**steps
+        value = end
+        question = (
+            f"A sample of ${start}$ {thing} is divided by ${factor}$ every "
+            f"{unit[:-1]}. How many remain after ${steps}$ {unit}?"
+        )
+    return Problem(
+        question_latex=question,
+        answer_latex=f"${value}$",
+        answer_expr=_sp.Integer(value),
+        topic="exponential_logarithms",
+        subskill="growth_decay",
+        difficulty=difficulty,
+        verify={"kind": "growth_decay"},
+    )

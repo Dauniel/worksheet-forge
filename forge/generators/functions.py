@@ -158,3 +158,112 @@ def transformation_equation(rng: random.Random, difficulty: str) -> Problem:
         difficulty=difficulty,
         verify={"kind": "transformation"},
     )
+
+
+EVAL_INPUT = {"easy": 6, "medium": 10, "hard": 15}
+
+
+@register("functions", "evaluate_function")
+def evaluate_function(rng: random.Random, difficulty: str) -> Problem:
+    """``f(x) = ...``, find ``f(k)`` -- the first thing students meet.
+
+    Quadratic at medium and up, so substituting a negative input actually
+    matters: f(-3) with an x^2 term is where sign errors surface.
+    """
+    _, hi = RANGES[difficulty]
+    span = EVAL_INPUT[difficulty]
+    k = nonzero_int(rng, -span, span)
+
+    if difficulty == "easy":
+        a, b = nonzero_int(rng, 1, hi), nonzero_int(rng, -hi, hi)
+        expr = a * X + b
+        text = linear(a, b)
+    else:
+        a = nonzero_int(rng, 1, min(hi, 6))
+        b, c = nonzero_int(rng, -hi, hi), nonzero_int(rng, -hi, hi)
+        expr = a * X**2 + b * X + c
+        text = poly([a, b, c])
+
+    value = sp.Integer(expr.subs(X, k))
+    question = f"f(x) = {text}, \\quad f({k})"
+    return _mk(question, sp.latex(value), value, "evaluate_function", difficulty,
+               kind="evaluate_function")
+
+
+@register("functions", "domain_range")
+def domain_range(rng: random.Random, difficulty: str) -> Problem:
+    """Domain and range of a finite relation given as ordered pairs.
+
+    A finite set has an exactly checkable answer; "all reals except 3" would
+    need interval parsing for no extra pedagogical value at this level.
+    """
+    span = EVAL_INPUT[difficulty]
+    size = {"easy": 4, "medium": 5, "hard": 6}[difficulty]
+    xs = rng.sample(range(-span, span + 1), size)
+    ys = [nonzero_int(rng, -span, span) for _ in xs]
+
+    pairs = ", ".join(f"({x}, {y})" for x, y in zip(xs, ys))
+    domain = ", ".join(str(v) for v in sorted(xs))
+    rng_text = ", ".join(str(v) for v in sorted(set(ys)))
+    question = f"$\\{{{pairs}\\}}$"
+    answer = f"domain: $\\{{{domain}\\}}$; range: $\\{{{rng_text}\\}}$"
+    return Problem(
+        question_latex=question,
+        answer_latex=answer,
+        answer_expr=(tuple(sorted(xs)), tuple(sorted(set(ys)))),
+        topic="functions",
+        subskill="domain_range",
+        difficulty=difficulty,
+        verify={"kind": "domain_range"},
+    )
+
+
+# Coefficient ranges for the literal-equation family below.
+LITERAL_COEF = {"easy": (2, 6), "medium": (2, 10), "hard": (2, 15)}
+LITERAL_VARS = ("a", "b", "c", "k", "n", "p", "q", "r", "s", "t", "u", "v")
+
+
+@register("functions", "literal_equation")
+def literal_equation(rng: random.Random, difficulty: str) -> Problem:
+    """Rearrange an equation in several variables for one of them.
+
+    A fixed bank of real formulas (A = lw, d = rt, ...) would be a hardcoded
+    problem list, which invariant 1 forbids -- eight formulas is eight
+    problems, forever. Instead the *shape* is fixed and everything in it is
+    sampled: coefficients, variable names, and which variable to isolate.
+    The shapes mirror the formulas students actually rearrange.
+    """
+    lo, hi = LITERAL_COEF[difficulty]
+    y, x, z = rng.sample(LITERAL_VARS, 3)
+    a = nonzero_int(rng, lo, hi)
+    style = rng.randrange(3)
+
+    if style == 0:
+        # a*x + b*y = c  ->  solve for y
+        b = nonzero_int(rng, lo, hi)
+        formula = f"{coeff(a, x)} + {coeff(b, y)} = {z}"
+        solution = rf"\dfrac{{{z} - {coeff(a, x)}}}{{{b}}}"
+    elif style == 1:
+        # z = a*x*y  ->  solve for y
+        formula = f"{z} = {coeff(a, f'{x}{y}')}"
+        solution = rf"\dfrac{{{z}}}{{{coeff(a, x)}}}"
+    else:
+        # z = a*(x + y)  ->  solve for y
+        formula = f"{z} = {coeff(a, '')}({x} + {y})"
+        solution = rf"\dfrac{{{z}}}{{{a}}} - {x}"
+
+    question = f"${formula}$, solve for ${y}$"
+    return Problem(
+        question_latex=question,
+        answer_latex=f"${y} = {solution}$",
+        # A string, deliberately: the real check is _v_literal_equation, which
+        # solves the printed equation with sympy and confirms the printed key
+        # is one of its solutions. Storing a sympy expression here would give
+        # the generic key check something to compare against, but it would be
+        # comparing the generator to itself.
+        answer_expr=f"{y} = {solution}",
+        topic="functions",
+        subskill="literal_equation",
+        difficulty=difficulty,
+        verify={"kind": "literal_equation"},
+    )

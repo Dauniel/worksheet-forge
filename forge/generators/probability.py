@@ -103,3 +103,35 @@ def dependent_events(rng: random.Random, difficulty: str) -> Problem:
     )
     value = sp.Rational(favourable, total) * sp.Rational(favourable - 1, total - 1)
     return _mk(question, value, "dependent_events", difficulty, "prob_dependent")
+
+
+COUNT_N = {"easy": (4, 7), "medium": (5, 9), "hard": (6, 12)}
+
+
+@register("probability", "permutations")
+def permutations(rng: random.Random, difficulty: str) -> Problem:
+    """``nPr`` -- order matters, so the frame says so explicitly."""
+    lo, hi = COUNT_N[difficulty]
+    n = rng.randint(lo, hi)
+    r = rng.randint(2, min(n - 1, 4))
+    item = pick(rng, ("books", "runners", "songs", "photos", "trophies"))
+    question = (
+        f"In how many different orders can ${r}$ of ${n}$ {item} be arranged?"
+    )
+    value = sp.factorial(n) / sp.factorial(n - r)
+    return _mk(question, value, "permutations", difficulty, "count_permutation")
+
+
+@register("probability", "combinations")
+def combinations(rng: random.Random, difficulty: str) -> Problem:
+    """``nCr`` -- order does not matter, and the frame says that too."""
+    lo, hi = COUNT_N[difficulty]
+    n = rng.randint(lo, hi)
+    r = rng.randint(2, min(n - 1, 4))
+    item = pick(rng, ("students", "cards", "colors", "toppings", "books"))
+    question = (
+        f"How many different groups of ${r}$ can be chosen from ${n}$ {item}, "
+        f"if the order does not matter?"
+    )
+    return _mk(question, sp.binomial(n, r), "combinations", difficulty,
+               "count_combination")

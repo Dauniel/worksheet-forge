@@ -122,3 +122,32 @@ def range_of_set(rng: random.Random, difficulty: str) -> Problem:
     rng.shuffle(values)
     return _mk(_render(values), max(values) - min(values), "range_of_set",
                difficulty, "stat_range")
+
+
+@register("statistics", "five_number_summary")
+def five_number_summary(rng: random.Random, difficulty: str) -> Problem:
+    """Minimum, Q1, median, Q3, maximum of a data set.
+
+    Set sizes are chosen so every quartile lands on a data value rather than
+    between two -- 4n+3 elements put Q1, the median and Q3 each exactly on a
+    member, which keeps all five numbers integers.
+    """
+    lo, hi = VALUE[difficulty]
+    n = {"easy": 7, "medium": 11, "hard": 15}[difficulty]
+    values = rng.sample(range(lo, hi + 1), n)
+    ordered = sorted(values)
+    mid = n // 2
+    q1 = ordered[mid // 2]
+    q3 = ordered[mid + 1 + mid // 2]
+    summary = (ordered[0], q1, ordered[mid], q3, ordered[-1])
+
+    answer = ", ".join(str(v) for v in summary)
+    return Problem(
+        question_latex=_render(values),
+        answer_latex=f"${answer}$",
+        answer_expr=tuple(sp.Integer(v) for v in summary),
+        topic="statistics",
+        subskill="five_number_summary",
+        difficulty=difficulty,
+        verify={"kind": "stat_five_number"},
+    )

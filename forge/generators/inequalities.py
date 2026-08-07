@@ -218,3 +218,48 @@ def compound_and(rng: random.Random, difficulty: str) -> Problem:
         difficulty=difficulty,
         verify={"kind": "compound_inequality"},
     )
+
+
+@register("inequalities", "compound_or")
+def compound_or(rng: random.Random, difficulty: str) -> Problem:
+    """A disjunction: ``mx + b < low`` or ``mx + b > high``.
+
+    The union case, and the one students confuse with the conjunction. Built
+    backwards from two integer bounds with the low one strictly below the
+    high one, so the solution set is genuinely two disjoint rays rather than
+    all reals.
+    """
+    lo, hi = COMPOUND_WIDTH[difficulty]
+    m = _lead(rng, difficulty, hi)
+    b = nonzero_int(rng, -hi, hi)
+    low_x = nonzero_int(rng, -hi, hi)
+    high_x = low_x + rng.randint(lo, hi)
+
+    left, right = m * low_x + b, m * high_x + b
+    # A negative coefficient swaps which bound is numerically smaller *and*
+    # flips each relation, so both are derived rather than assumed.
+    if m > 0:
+        first, second = (left, "<"), (right, ">")
+        bound_lo, bound_hi = low_x, high_x
+    else:
+        first, second = (right, "<"), (left, ">")
+        bound_lo, bound_hi = low_x, high_x
+
+    body = linear(m, b)
+    question = (
+        f"${body} {RELS[first[1]]} {first[0]}$ or "
+        f"${body} {RELS[second[1]]} {second[0]}$"
+    )
+    solution = sp.Union(
+        sp.Interval.open(-sp.oo, bound_lo), sp.Interval.open(bound_hi, sp.oo)
+    )
+    answer = f"$x < {bound_lo}$ or $x > {bound_hi}$"
+    return Problem(
+        question_latex=question,
+        answer_latex=answer,
+        answer_expr=solution,
+        topic="inequalities",
+        subskill="compound_or",
+        difficulty=difficulty,
+        verify={"kind": "compound_or"},
+    )

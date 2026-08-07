@@ -11,6 +11,7 @@ import sympy as sp
 from ..problem import Problem
 
 from .parsing import (
+    _expand_fracs,
     VerificationError,
     _FRAC,
     _POINT,
@@ -874,3 +875,130 @@ def _v_trig_phase_shift(p: Problem) -> None:
     _, _, c = _sinusoid_params(p)
     if not _equal(c, p.answer_expr):
         raise VerificationError(f"{p.topic}/{p.subskill}: phase shift is {c}")
+
+
+def _v_compound_or(p: Problem) -> None:
+    """Solve each half independently and union them; compare to the key.
+
+    Also re-solves the *printed* key the same way, so a rendering that flips
+    a bound is caught even when answer_expr is right.
+    """
+    x = sp.Symbol("x")
+    halves = re.findall(r"\$([^$]+)\$", p.question_latex)
+    if len(halves) != 2:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: expected two inequalities, found {len(halves)}"
+        )
+    solved = sp.Union(*[
+        sp.solve_univariate_inequality(
+            latex_relation_to_sympy(h), x, relational=False
+        )
+        for h in halves
+    ])
+    if solved != p.answer_expr:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: solves to {solved}, key says {p.answer_expr}"
+        )
+    printed_halves = re.findall(r"\$([^$]+)\$", p.answer_latex)
+    printed = sp.Union(*[
+        sp.solve_univariate_inequality(
+            latex_relation_to_sympy(h), x, relational=False
+        )
+        for h in printed_halves
+    ])
+    if printed != solved:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed key reads as {printed}, not {solved}"
+        )
+
+
+def _v_evaluate_function(p: Problem) -> None:
+    """Re-read f and the input off the question and substitute independently."""
+    x = sp.Symbol("x")
+    text = p.question_latex.strip().strip("$")
+    m = re.search(r"f\(x\)\s*=\s*(.+?),\s*\\quad\s*f\((-?\d+)\)", text)
+    if m is None:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read f and input")
+    expr = latex_to_sympy(m.group(1))
+    expected = expr.subs(x, sp.Integer(m.group(2)))
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: f({m.group(2)}) = {expected}, "
+            f"key says {p.answer_expr}"
+        )
+
+
+_PAIR = re.compile(r"\((-?\d+),\s*(-?\d+)\)")
+
+
+def _v_domain_range(p: Problem) -> None:
+    """Recompute the domain and range from the printed ordered pairs."""
+    pairs = [(int(a), int(b)) for a, b in _PAIR.findall(p.question_latex)]
+    if not pairs:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no ordered pairs in question")
+    domain = tuple(sorted({a for a, _ in pairs}))
+    values = tuple(sorted({b for _, b in pairs}))
+    if (domain, values) != tuple(p.answer_expr):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: domain/range should be {domain} / {values}"
+        )
+    # The printed key must state the same two sets, not just answer_expr.
+    printed = re.findall(r"\\\{([^{}]*)\\\}", p.answer_latex)
+    if len(printed) != 2:
+        raise VerificationError(f"{p.topic}/{p.subskill}: key must state two sets")
+    got_d = tuple(sorted(int(v) for v in printed[0].split(",")))
+    got_r = tuple(sorted(int(v) for v in printed[1].split(",")))
+    if (got_d, got_r) != (domain, values):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed key {got_d} / {got_r} != "
+            f"{domain} / {values}"
+        )
+
+
+# Formula variables are single letters, but "rt" and "Prt" tokenize as one
+# symbol -- sympy's implicit multiplication does not split adjacent letters.
+# Splitting them here (rather than storing a sympy expression on the Problem)
+# keeps verification a re-derivation from the printed string.
+_PI_PLACEHOLDER = "Z"
+
+
+def _formula_to_sympy(text: str) -> sp.Expr:
+    s = text.replace(r"\ell", "L").replace(r"\pi", _PI_PLACEHOLDER)
+    # Expand \dfrac first: the letter-splitter below would otherwise turn the
+    # macro name itself into \d*f*r*a*c.
+    s = _expand_fracs(s)
+    s = re.sub(r"([A-Za-z])(?=[A-Za-z])", r"\1*", s)
+    expr = latex_to_sympy(s)
+    return expr.subs(sp.Symbol(_PI_PLACEHOLDER), sp.pi)
+
+
+def _v_literal_equation(p: Problem) -> None:
+    """Solve the printed formula for the printed variable, with sympy.
+
+    The formula bank is authored text, so this is the check that matters: the
+    key is only correct if sympy, solving the equation as printed, agrees.
+    """
+    text = p.question_latex.strip().strip("$")
+    m = re.match(r"(.+?),\s*solve for \$?([A-Za-z])\$?$", text)
+    if m is None:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read the formula")
+    body, target = m.group(1), m.group(2)
+    if "=" not in body:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no equation in {body!r}")
+    lhs_text, rhs_text = body.split("=", 1)
+    lhs, rhs = _formula_to_sympy(lhs_text), _formula_to_sympy(rhs_text)
+    var = sp.Symbol(target)
+    solutions = sp.solve(sp.Eq(lhs, rhs), var)
+    if not solutions:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot solve for {target}")
+
+    key = p.answer_latex.strip().strip("$")
+    km = re.match(rf"{target}\s*=\s*(.+)$", key)
+    if km is None:
+        raise VerificationError(f"{p.topic}/{p.subskill}: key must read '{target} = ...'")
+    printed = _formula_to_sympy(km.group(1))
+    if not any(sp.simplify(printed - s) == 0 for s in solutions):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {target} = {printed} is not a solution "
+            f"(sympy gives {solutions})"
+        )

@@ -316,3 +316,114 @@ def _v_unit_price_comparison(p: Problem) -> None:
             f"{p.topic}/{p.subskill}: better buy is Option {expected}, "
             f"printed key says {p.answer_latex!r}"
         )
+
+
+def _v_decimal_to_percent(p: Problem) -> None:
+    """The key must be 100x the printed decimal.
+
+    The generic ``evaluate`` strategy cannot check a conversion: it requires
+    question and answer to be the same value, and here they differ by exactly
+    the factor being taught.
+    """
+    value = latex_to_sympy(p.question_latex)
+    expected = value * 100
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {value} as a percent is {expected}"
+        )
+
+
+def _v_percent_to_decimal(p: Problem) -> None:
+    # latex_to_sympy strips the % sign, so this is the bare number.
+    value = latex_to_sympy(p.question_latex)
+    expected = value / 100
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {value}% as a decimal is {expected}"
+        )
+
+
+_LCM = re.compile(
+    r"\\operatorname\{LCM\}\\left\((.+?),\s*(.+?)\\right\)"
+)
+
+
+def _v_lcm(p: Problem) -> None:
+    """Re-read both operands and recompute the least common multiple."""
+    m = _LCM.search(p.question_latex)
+    if m is None:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no LCM(...) in question")
+    a, b = (latex_to_sympy(t) for t in m.groups())
+    expected = sp.lcm(a, b)
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: LCM should be {expected}")
+
+
+def _v_prime_factorization(p: Problem) -> None:
+    """The printed product must multiply back to the number, and be all primes."""
+    n = latex_to_sympy(p.question_latex)
+    product = latex_to_sympy(p.answer_latex)
+    if not _equal(product, n):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed factorization is {product}, not {n}"
+        )
+    bases = {int(b) for b in re.findall(r"(?<![\^{\d])(\d+)", p.answer_latex.strip("$"))}
+    non_prime = sorted(b for b in bases if not sp.isprime(b))
+    if non_prime:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {non_prime} in the factorization are not prime"
+        )
+
+
+def _v_count_permutation(p: Problem) -> None:
+    r, n = _nums(p.question_latex)
+    expected = sp.factorial(n) / sp.factorial(n - r)
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: should be {expected}")
+
+
+def _v_count_combination(p: Problem) -> None:
+    r, n = _nums(p.question_latex)
+    expected = sp.binomial(n, r)
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: should be {expected}")
+
+
+def _v_stat_five_number(p: Problem) -> None:
+    """Recompute all five values from the printed data set."""
+    ordered = sorted(_data_set(p))
+    n = len(ordered)
+    mid = n // 2
+    expected = (
+        ordered[0], ordered[mid // 2], ordered[mid],
+        ordered[mid + 1 + mid // 2], ordered[-1],
+    )
+    if tuple(p.answer_expr) != expected:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: summary should be {expected}"
+        )
+    printed = tuple(sp.Integer(v) for v in
+                    re.findall(r"-?\d+", p.answer_latex.strip("$")))
+    if printed != expected:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed key {printed} != {expected}"
+        )
+
+
+def _v_growth_decay(p: Problem) -> None:
+    """Re-read start, factor and steps from the sentence and recompute."""
+    start, factor, steps = _nums(p.question_latex)
+    if factor <= 1:
+        raise VerificationError(f"{p.topic}/{p.subskill}: factor {factor} is degenerate")
+    if "multiplies by" in p.question_latex:
+        expected = start * factor**steps
+    elif "divided by" in p.question_latex:
+        expected = sp.Rational(start, factor**steps)
+        if expected.q != 1:
+            raise VerificationError(
+                f"{p.topic}/{p.subskill}: {start} does not divide evenly {steps} times"
+            )
+    else:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no growth/decay verb")
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: should be {expected}")

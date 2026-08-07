@@ -14,6 +14,7 @@ import sympy as sp
 from ..problem import Problem
 
 from .parsing import (
+    _POINT,
     VerificationError,
     _equal,
     _nums,
@@ -269,3 +270,168 @@ def _v_trig_law_of_sines(p: Problem) -> None:
     )
     if not _equal(expected, p.answer_expr):
         raise VerificationError(f"{p.topic}/{p.subskill}: b should be {expected}")
+
+
+def _v_geo_cylinder_volume(p: Problem) -> None:
+    r, h = _nums(p.question_latex)
+    expected = sp.pi * r**2 * h
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: volume should be {expected}")
+
+
+def _v_geo_cone_volume(p: Problem) -> None:
+    r, h = _nums(p.question_latex)
+    expected = sp.Rational(1, 3) * sp.pi * r**2 * h
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: volume should be {expected}")
+
+
+def _v_geo_sphere_volume(p: Problem) -> None:
+    (r,) = _nums(p.question_latex)
+    expected = sp.Rational(4, 3) * sp.pi * r**3
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: volume should be {expected}")
+
+
+def _v_geo_cylinder_sa(p: Problem) -> None:
+    r, h = _nums(p.question_latex)
+    expected = 2 * sp.pi * r * (r + h)
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: surface area should be {expected}"
+        )
+
+
+def _v_coord_distance(p: Problem) -> None:
+    pts = _POINT.findall(p.question_latex)
+    if len(pts) != 2:
+        raise VerificationError(f"{p.topic}/{p.subskill}: expected two points")
+    (x1, y1), (x2, y2) = ((sp.Integer(a), sp.Integer(b)) for a, b in pts)
+    expected = sp.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: distance is {expected}")
+
+
+def _v_coord_midpoint(p: Problem) -> None:
+    pts = _POINT.findall(p.question_latex)
+    if len(pts) != 2:
+        raise VerificationError(f"{p.topic}/{p.subskill}: expected two points")
+    (x1, y1), (x2, y2) = ((sp.Integer(a), sp.Integer(b)) for a, b in pts)
+    expected = (sp.Rational(x1 + x2, 2), sp.Rational(y1 + y2, 2))
+    if tuple(p.answer_expr) != expected:
+        raise VerificationError(f"{p.topic}/{p.subskill}: midpoint is {expected}")
+    printed = _POINT.findall(p.answer_latex)
+    if len(printed) != 1 or tuple(sp.Integer(v) for v in printed[0]) != expected:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed key {printed} != {expected}"
+        )
+
+
+def _printed_point(p: Problem):
+    """The single point printed in the answer key, as ints."""
+    printed = _POINT.findall(p.answer_latex)
+    if len(printed) != 1:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: key must state exactly one point, "
+            f"found {len(printed)}"
+        )
+    return (int(printed[0][0]), int(printed[0][1]))
+
+
+def _v_coord_translate(p: Problem) -> None:
+    pts = _POINT.findall(p.question_latex)
+    (x, y) = (int(pts[0][0]), int(pts[0][1]))
+    dx = int(re.search(r"right (\d+)", p.question_latex).group(1)) if "right" in \
+        p.question_latex else -int(re.search(r"left (\d+)", p.question_latex).group(1))
+    dy = int(re.search(r"up (\d+)", p.question_latex).group(1)) if "up " in \
+        p.question_latex else -int(re.search(r"down (\d+)", p.question_latex).group(1))
+    expected = (x + dx, y + dy)
+    if tuple(p.answer_expr) != expected:
+        raise VerificationError(f"{p.topic}/{p.subskill}: image is {expected}")
+    # The printed key is checked separately: answer_expr agreeing proves only
+    # that the generator agrees with itself.
+    if _printed_point(p) != expected:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed key {_printed_point(p)} != {expected}"
+        )
+
+
+def _v_coord_reflect(p: Problem) -> None:
+    pts = _POINT.findall(p.question_latex)
+    x, y = int(pts[0][0]), int(pts[0][1])
+    text = p.question_latex
+    if "x$-axis" in text:
+        expected = (x, -y)
+    elif "y$-axis" in text:
+        expected = (-x, y)
+    elif "y = x" in text:
+        expected = (y, x)
+    else:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no reflection line stated")
+    if tuple(p.answer_expr) != expected:
+        raise VerificationError(f"{p.topic}/{p.subskill}: image is {expected}")
+    if _printed_point(p) != expected:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed key {_printed_point(p)} != {expected}"
+        )
+
+
+_DEGREES = re.compile(r"\$(-?\d+)\^\\circ\$")
+
+
+def _degrees(text: str):
+    """Every angle printed as ``$45^\\circ$``, in reading order.
+
+    ``_nums`` only matches a bare ``$45$``; degrees carry their symbol, and
+    dropping it to satisfy the reader would be the wrong trade -- the
+    notation on the page should stay correct.
+    """
+    return [sp.Integer(v) for v in _DEGREES.findall(text)]
+
+
+def _v_angle_complementary(p: Problem) -> None:
+    (a,) = _degrees(p.question_latex)
+    if not _equal(90 - a, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: should be {90 - a}")
+
+
+def _v_angle_supplementary(p: Problem) -> None:
+    (a,) = _degrees(p.question_latex)
+    if not _equal(180 - a, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: should be {180 - a}")
+
+
+def _v_angle_triangle(p: Problem) -> None:
+    a, b = _degrees(p.question_latex)
+    expected = 180 - a - b
+    if expected <= 0:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {a} + {b} leaves no third angle"
+        )
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: should be {expected}")
+
+
+def _v_angle_polygon_sum(p: Problem) -> None:
+    (n,) = _nums(p.question_latex)
+    if n < 3:
+        raise VerificationError(f"{p.topic}/{p.subskill}: {n} sides is not a polygon")
+    if not _equal(180 * (n - 2), p.answer_expr):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: should be {180 * (n - 2)}"
+        )
+
+
+def _v_angle_transversal(p: Problem) -> None:
+    """Equal for vertical/corresponding/alternate, supplementary for co-interior."""
+    (a,) = _degrees(p.question_latex)
+    text = p.question_latex
+    if "co-interior" in text:
+        expected = 180 - a
+    elif any(k in text for k in ("vertical to", "corresponding with",
+                                 "alternate interior")):
+        expected = a
+    else:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no relation stated")
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: should be {expected}")
