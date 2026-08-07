@@ -30,12 +30,24 @@ FRACTION_P = {"easy": 0.0, "medium": 0.2, "hard": 0.35}
 
 
 def _solution(rng: random.Random, difficulty: str) -> Fraction:
-    """Integer solutions by default; a tidy fraction at the rate set by tier."""
+    """Integer solutions by default; a tidy fraction at the rate set by tier.
+
+    Redraws when the numerator happens to divide the denominator: Fraction()
+    reduces, so 8/4 would silently come back as the integer 2 and the measured
+    fraction rate would read well under FRACTION_P (0.27 against a configured
+    0.35). Same reduction trap that fractional_both_sides guards against in
+    inequalities.py.
+    """
     lo, hi = RANGES[difficulty]
     whole = nonzero_int(rng, -hi, hi)
-    if rng.random() < FRACTION_P[difficulty]:
-        return Fraction(whole, pick(rng, NICE_DENOMS[difficulty]))
-    return Fraction(whole)
+    if rng.random() >= FRACTION_P[difficulty]:
+        return Fraction(whole)
+    for _ in range(20):
+        candidate = Fraction(whole, pick(rng, NICE_DENOMS[difficulty]))
+        if candidate.denominator > 1:
+            return candidate
+        whole = nonzero_int(rng, -hi, hi)
+    return candidate  # pathological rng: fall back rather than loop forever
 
 
 def _mk(lhs: str, rhs: str, x_sol, subskill: str, difficulty: str) -> Problem:

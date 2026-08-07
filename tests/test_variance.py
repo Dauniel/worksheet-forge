@@ -61,6 +61,20 @@ SMALL_REACHABLE_SPACE = {
         "brute-force enumeration gives exactly 20 distinct reachable "
         "radicands",
     ),
+    ("geometry", "pythagorean_hypotenuse"): (
+        30,  # 6 triples in _PYTHAG_TRIPLES x 5 UNITS, SCALE["easy"] = (1,)
+        "both legs are given and the hypotenuse must come out a whole "
+        "number, so the sides can only be a Pythagorean triple -- the pool "
+        "is 6 well-proportioned primitives, unscaled at easy, times the unit "
+        "label. Widening it means accepting either irrational hypotenuses "
+        "(a different subskill: simplify_radical) or triangles that draw as "
+        "slivers",
+    ),
+    ("geometry", "pythagorean_leg"): (
+        60,  # 6 triples x 5 UNITS x 2 choices of which leg is unknown
+        "same triple pool as pythagorean_hypotenuse, doubled because "
+        "either leg may be the unknown",
+    ),
     ("geometry", "area_square"): (
         55,  # 11 side lengths (SQUARE_SIZE["easy"] = 2..12) x 5 UNITS
         "a square is one sampled dimension and a unit label -- there is "
@@ -186,3 +200,47 @@ def test_null_ledger_blocks_nothing(tmp_path):
     ledger = NullLedger()
     ledger.record(["aaa"])
     assert ledger.blocked == set()
+
+
+# Tier dicts where medium and hard are legitimately the same value. Each entry
+# must name a reason: the subskill has to vary on some *other* knob, or the
+# tier genuinely cannot widen. Anything not listed here that collapses is the
+# bug this test exists to catch.
+TIER_COLLAPSE_ALLOWED = {
+    # exponents.negative_exponents already tiers on NEG_BASES and NEG_COEF; the
+    # exponent itself is capped at 4 because 2^-5 stops being mental math.
+    ("exponents", "NEG_MAX_N"),
+    # A boolean gate, not a magnitude band: once negative exponents are
+    # switched on at medium there is nothing further to widen at hard, which
+    # tiers on EXP and DECIMALS instead.
+    ("scientific_notation", "ALLOW_NEGATIVE_EXP"),
+}
+
+
+def test_no_tier_dict_collapses_medium_into_hard():
+    """A difficulty a generator accepts and ignores is a lie to the caller.
+
+    This shipped four separate times -- exponents, inequalities,
+    linear_equations, geometry -- each found by hand long after the fact,
+    because every generator hand-rolls its own tier dict. Catch the next one
+    at import instead.
+    """
+    import importlib
+    import pkgutil
+
+    import forge.generators as gens
+
+    collapsed = []
+    for mod_info in pkgutil.iter_modules(gens.__path__):
+        mod = importlib.import_module(f"forge.generators.{mod_info.name}")
+        for name, val in vars(mod).items():
+            if not isinstance(val, dict) or not {"easy", "medium", "hard"} <= set(val):
+                continue
+            if val["medium"] == val["hard"] and (mod_info.name, name) not in TIER_COLLAPSE_ALLOWED:
+                collapsed.append(f"{mod_info.name}.{name} = {val['medium']!r}")
+
+    assert not collapsed, (
+        "medium and hard are identical in:\n  " + "\n  ".join(sorted(collapsed))
+        + "\nWiden the hard band, add a structural parameter, or add an entry "
+          "to TIER_COLLAPSE_ALLOWED with a reason."
+    )
