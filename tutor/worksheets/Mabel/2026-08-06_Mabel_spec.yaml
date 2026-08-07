@@ -1,0 +1,211 @@
+title: Mabel Math Worksheet
+header: Mabel Math Worksheet
+sections:
+- name: 'Part A: Negative Number Operations'
+  directions: Evaluate each expression completely.
+  workspace: 1.1cm
+  columns: 2
+  problems:
+  - topic: negatives
+    subskill: order_of_operations
+    count: 15
+    difficulty: medium
+  - topic: negatives
+    subskill: order_of_operations
+    count: 15
+    difficulty: hard
+- name: 'Part B: Negative Number Operations'
+  directions: Evaluate each expression completely.
+  workspace: 1.1cm
+  columns: 2
+  problems:
+  - topic: negatives
+    subskill: add_sub_integers
+    count: 5
+    difficulty: medium
+  - topic: negatives
+    subskill: add_sub_integers
+    count: 5
+    difficulty: hard
+  - topic: negatives
+    subskill: mul_div_integers
+    count: 5
+    difficulty: medium
+  - topic: negatives
+    subskill: mul_div_integers
+    count: 5
+    difficulty: hard
+  - topic: negatives
+    subskill: mixed_operations
+    count: 5
+    difficulty: medium
+  - topic: negatives
+    subskill: mixed_operations
+    count: 5
+    difficulty: hard
+- name: 'Part C: Solving Linear Equations'
+  directions: Solve each equation for $x$. Show your steps.
+  workspace: 2.0cm
+  columns: 2
+  problems:
+  - topic: linear_equations
+    subskill: one_step
+    count: 4
+    difficulty: medium
+  - topic: linear_equations
+    subskill: two_step
+    count: 5
+    difficulty: medium
+  - topic: linear_equations
+    subskill: with_distribution
+    count: 5
+    difficulty: medium
+  - topic: linear_equations
+    subskill: multi_step_both_sides
+    count: 6
+    difficulty: hard
+  - topic: linear_equations
+    subskill: fractional
+    count: 5
+    difficulty: hard
+  - topic: linear_equations
+    subskill: proportion
+    count: 5
+    difficulty: hard
+- name: 'Part D: Linear Inequalities'
+  directions: Solve each inequality for $x$.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - topic: inequalities
+    subskill: one_step
+    count: 5
+    difficulty: medium
+  - topic: inequalities
+    subskill: two_step
+    count: 5
+    difficulty: medium
+  - topic: inequalities
+    subskill: multi_step_both_sides
+    count: 8
+    difficulty: hard
+  - topic: inequalities
+    subskill: fractional
+    count: 6
+    difficulty: hard
+  - topic: inequalities
+    subskill: fractional_both_sides
+    count: 6
+    difficulty: hard
+- name: 'Part E: Slope and Linear Graphs'
+  directions: Identify the slope $m$ and the $y$-intercept $b$ of each line.
+  workspace: 1.2cm
+  columns: 2
+  problems:
+  - topic: slope
+    subskill: identify_slope_intercept
+    count: 5
+    difficulty: medium
+- name: 'Part F: Slope Through Two Points'
+  directions: Find the slope of the line through each pair of points.
+  workspace: 1.6cm
+  columns: 2
+  problems:
+  - topic: slope
+    subskill: slope_from_two_points
+    count: 5
+    difficulty: medium
+- name: 'Part G: Equations From Two Points'
+  directions: Write the equation of the line through each pair of points in slope-intercept form.
+  workspace: 2.0cm
+  columns: 2
+  problems:
+  - topic: slope
+    subskill: equation_from_two_points
+    count: 5
+    difficulty: hard
+- name: 'Part H: Equations From a Slope and a Point'
+  directions: Write the equation of each line in slope-intercept form.
+  workspace: 2.0cm
+  columns: 2
+  problems:
+  - topic: slope
+    subskill: point_slope_to_equation
+    count: 5
+    difficulty: hard
+- name: 'Part I: Slope and Equation From Two Points'
+  directions: Find the slope of the line through each pair of points, then write the equation of the line
+    in slope-intercept form.
+  workspace: 2.0cm
+  columns: 2
+  problems:
+  - topic: slope
+    subskill: slope_and_equation
+    count: 5
+    difficulty: hard
+- name: 'Part J: Rewriting in Slope-Intercept Form'
+  directions: Rewrite each equation in slope-intercept form, then identify the slope $m$ and the $y$-intercept
+    $b$.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - topic: slope
+    subskill: identify_from_standard
+    count: 5
+    difficulty: medium
+- name: 'Part K: Exponent Rules'
+  directions: Simplify. Write answers with positive exponents.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: exponents
+    subskill: product_rule
+    count: 5
+    difficulty: medium
+  - topic: exponents
+    subskill: quotient_rule
+    count: 5
+    difficulty: medium
+  - topic: exponents
+    subskill: power_rule
+    count: 5
+    difficulty: medium
+  - topic: exponents
+    subskill: negative_exponents
+    count: 5
+    difficulty: hard
+  - topic: exponents
+    subskill: zero_and_negative_powers
+    count: 5
+    difficulty: hard
+  - topic: exponents
+    subskill: combined_rules
+    count: 5
+    difficulty: hard
+- name: 'Part L: Roots'
+  directions: Evaluate each root.
+  workspace: 1.2cm
+  columns: 2
+  problems:
+  - topic: roots
+    subskill: square_root
+    count: 11
+    difficulty: hard
+  - topic: roots
+    subskill: cube_root
+    count: 5
+    difficulty: hard
+- name: 'Part M: Simplifying Radicals'
+  directions: Simplify each radical completely.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: roots
+    subskill: simplify_radical
+    count: 8
+    difficulty: hard
+  - topic: roots
+    subskill: simplify_cube_radical
+    count: 6
+    difficulty: hard
+seed: 806
