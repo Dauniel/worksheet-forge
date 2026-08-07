@@ -193,7 +193,7 @@ the repo root. Read that file before writing any generator. In short: sample
 every number from `rng`, construct backwards from the chosen answer, build
 LaTeX through `forge/core/latexfmt.py` rather than f-strings, pick a
 verification kind that re-reads the printed question (or, for figures, the
-printed *labels* -- see `forge/core/tikz.py` and `forge/core/verify.py` for
+printed *labels* -- see `forge/core/tikz.py` and `forge/core/verify/` for
 the pattern used by the `geometry` generators), and register the subskill in
 `forge/catalog.py`. Run `pytest` afterward -- the suite will fuzz the new
 generator across 1000 seeds automatically, and for anything with a diagram,

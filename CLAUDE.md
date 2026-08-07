@@ -21,7 +21,7 @@ answer is solved by sympy. Frames are scaffolding, never problems.
 
 ## Invariant 2: no PDF is emitted with an unverified key
 
-`forge/core/verify.py` re-derives every answer *independently of how the
+`forge/core/verify/` re-derives every answer *independently of how the
 generator computed it* — parsing `question_latex` back into sympy and
 re-solving. `generate()` calls `verify_all()` before any rendering happens.
 Any mismatch raises `VerificationError` and fails the build loudly.

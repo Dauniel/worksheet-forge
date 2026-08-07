@@ -104,8 +104,10 @@ bug), `3` LaTeX failed.
 `unit_rates`, `systems`, `quadratics`, `rational_expressions`,
 `polynomials`, `variation`, `radical_equations`, `graphing`,
 `complex_numbers`, `exponential_logarithms`, `sequences_series`,
-`right_triangle_trig`, `unit_circle` — 101 generators in total. Run
-`python -m forge topics` for the current list with subskills.
+`right_triangle_trig`, `unit_circle`, `statistics`, `scientific_notation`,
+`probability` — 30 topics, 114 generators in total. Run
+`python -m forge topics` for the current list with subskills, which is the
+authoritative one; the counts here are a snapshot and drift as topics land.
 
 `graphing` is scoped to point-testing (`is $(x, y)$ a solution?`), not shaded
 regions -- a printed worksheet is graphed by hand, so there is no pixel
@@ -125,7 +127,7 @@ the divisor and quotient and multiplies.
 across specs; problems used in the last N runs are rejected at draw time, with
 a bounded retry that relaxes and warns rather than hanging.
 
-**Verification.** `forge/core/verify.py` holds one strategy per answer shape.
+**Verification.** `forge/core/verify/` holds one strategy per answer shape, split into `parsing`, `algebra`, `geometry` and `data`.
 The strong ones re-read the printed question (`slope_from_points` recomputes
 the slope from the points as rendered) rather than trusting generator
 metadata. Word problems are the weakest case — prose can't be parsed back — so

@@ -3,7 +3,7 @@
 Percent proportion, estimating with friendly percents, markup/discount,
 percent error, commission, and tax/tip. Every quantity is sampled from
 ``rng``; sentences are templated scaffolding only. Verification re-reads the
-printed numbers straight out of the sentence (see ``forge/core/verify.py``)
+printed numbers straight out of the sentence (see ``forge/core/verify/``)
 and re-applies each formula independently.
 """
 
