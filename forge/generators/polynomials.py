@@ -86,3 +86,48 @@ def difference_of_squares(rng: random.Random, difficulty: str) -> Problem:
     answer = f"({terms(lead, num(-r))})({terms(lead, num(r))})"
     answer_expr = (s * X - r) * (s * X + r)
     return _mk(question, answer, answer_expr, "difference_of_squares", difficulty)
+
+
+@register("polynomials", "synthetic_division")
+def synthetic_division(rng: random.Random, difficulty: str) -> Problem:
+    """Divide a cubic (or quartic at hard) by ``x - r``, exactly.
+
+    Built backwards: pick the quotient and the root, multiply to get the
+    dividend. That forces a zero remainder, which keeps the answer a clean
+    polynomial -- and lets the existing ``simplify`` strategy verify it, since
+    the printed question is then a rational expression algebraically equal to
+    the printed quotient.
+    """
+    _, hi = RANGES[difficulty]
+    degree = 3 if difficulty == "hard" else 2
+    quotient = [nonzero_int(rng, 1, min(hi, 4))]
+    quotient += [nonzero_int(rng, -hi, hi) for _ in range(degree)]
+    r = nonzero_int(rng, -min(hi, 6), min(hi, 6))
+
+    q_expr = sum(c * X ** (degree - i) for i, c in enumerate(quotient))
+    dividend = sp.expand((X - r) * q_expr)
+    dividend_coeffs = [int(dividend.coeff(X, k)) for k in range(degree + 1, -1, -1)]
+
+    question = rf"\dfrac{{{poly(dividend_coeffs)}}}{{{linear(1, -r)}}}"
+    return _mk(question, poly(quotient), q_expr, "synthetic_division", difficulty)
+
+
+@register("polynomials", "factor_by_grouping")
+def factor_by_grouping(rng: random.Random, difficulty: str) -> Problem:
+    """``x^3 + ax^2 + bx + ab`` factors as ``(x + a)(x^2 + b)``.
+
+    Built from the two factors outward, so the grouping always works -- a
+    randomly drawn cubic almost never factors over the integers.
+    """
+    _, hi = RANGES[difficulty]
+    a = nonzero_int(rng, -hi, hi)
+    # b may be negative: x^3 + ax^2 - bx - ab groups just as cleanly, and
+    # allowing the sign doubles a space that was small enough to make the
+    # same first problem recur across seeds.
+    b = nonzero_int(rng, -hi, hi)
+    lead = nonzero_int(rng, 2, 3) if difficulty == "hard" else 1
+
+    expanded = sp.expand((X + a) * (lead * X**2 + b))
+    coeffs = [int(expanded.coeff(X, k)) for k in range(3, -1, -1)]
+    answer = f"({linear(1, a)})({poly([lead, 0, b])})"
+    return _mk(poly(coeffs), answer, expanded, "factor_by_grouping", difficulty)

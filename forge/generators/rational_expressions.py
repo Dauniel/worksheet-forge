@@ -78,3 +78,49 @@ def multiply(rng: random.Random, difficulty: str) -> Problem:
         difficulty=difficulty,
         verify={"kind": "multiply_rational", "answer_check": None},
     )
+
+
+X = __import__("sympy").Symbol("x")
+
+
+@register("rational_expressions", "solve_rational_equation")
+def solve_rational_equation(rng: random.Random, difficulty: str) -> Problem:
+    """``a/(x - p) = b/(x - q)``, cross-multiplied to a linear equation.
+
+    Built backwards from the solution: pick ``x_sol`` and the two excluded
+    values, then derive coefficients that make ``x_sol`` satisfy the equation.
+    ``x_sol`` is kept clear of both excluded values, so no problem is secretly
+    an extraneous-solution trap -- that case needs its own directions and its
+    own key ("no solution"), which is a different subskill.
+    """
+    import sympy as sp
+
+    _, hi = RANGES[difficulty]
+    p_ex = nonzero_int(rng, -hi, hi)
+    q_ex = nonzero_int(rng, -hi, hi)
+    while q_ex == p_ex:
+        q_ex = nonzero_int(rng, -hi, hi)
+
+    x_sol = nonzero_int(rng, -hi, hi)
+    while x_sol in (p_ex, q_ex):
+        x_sol = nonzero_int(rng, -hi, hi)
+
+    # a*(x_sol - q) = b*(x_sol - p) is satisfied by a = k*(x_sol - p),
+    # b = k*(x_sol - q) -- exact integers, no fractions introduced.
+    k = nonzero_int(rng, 1, min(hi, 4))
+    a = k * (x_sol - p_ex)
+    b = k * (x_sol - q_ex)
+    if a == 0 or b == 0:  # would collapse a side to zero
+        a, b = a or k, b or k
+
+    lhs = rf"\dfrac{{{a}}}{{{linear(1, -p_ex)}}}"
+    rhs = rf"\dfrac{{{b}}}{{{linear(1, -q_ex)}}}"
+    return Problem(
+        question_latex=f"${lhs} = {rhs}$",
+        answer_latex=f"$x = {x_sol}$",
+        answer_expr=sp.Integer(x_sol),
+        topic="rational_expressions",
+        subskill="solve_rational_equation",
+        difficulty=difficulty,
+        verify={"kind": "solve", "var": "x", "lhs": lhs, "rhs": rhs},
+    )

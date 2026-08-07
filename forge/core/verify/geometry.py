@@ -233,3 +233,39 @@ def _v_exact_trig_value(p: Problem) -> None:
         raise VerificationError(
             f"{p.topic}/{p.subskill}: {p.question_latex} = {expected}, key says {printed}"
         )
+
+
+_TRIANGLE_ABC = re.compile(r"\$([abAB])\s*=\s*(\d+)\$")
+_TRIANGLE_ANGLE = re.compile(r"\$([ABC])\s*=\s*(\d+)\^\\circ\$")
+
+
+def _v_trig_law_of_cosines(p: Problem) -> None:
+    """Re-read the two sides and the included angle; re-apply the law."""
+    sides = {n: sp.Integer(v) for n, v in _TRIANGLE_ABC.findall(p.question_latex)}
+    angles = {n: int(v) for n, v in _TRIANGLE_ANGLE.findall(p.question_latex)}
+    if set(sides) != {"a", "b"} or "C" not in angles:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: expected sides a, b and angle C, got "
+            f"{sorted(sides)} / {sorted(angles)}"
+        )
+    a, b = sides["a"], sides["b"]
+    expected = sp.sqrt(a**2 + b**2 - 2 * a * b * sp.cos(sp.rad(angles["C"])))
+    if not _equal(sp.nsimplify(expected), p.answer_expr):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: c should be {sp.nsimplify(expected)}"
+        )
+
+
+def _v_trig_law_of_sines(p: Problem) -> None:
+    """Re-read one side and two angles; re-apply a/sin A = b/sin B."""
+    sides = {n: sp.Integer(v) for n, v in _TRIANGLE_ABC.findall(p.question_latex)}
+    angles = {n: int(v) for n, v in _TRIANGLE_ANGLE.findall(p.question_latex)}
+    if "a" not in sides or not {"A", "B"} <= set(angles):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: expected side a and angles A, B"
+        )
+    expected = sp.nsimplify(
+        sides["a"] * sp.sin(sp.rad(angles["B"])) / sp.sin(sp.rad(angles["A"]))
+    )
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: b should be {expected}")

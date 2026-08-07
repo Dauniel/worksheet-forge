@@ -29,6 +29,12 @@ from .parsing import (
     _mixed_to_sympy,
 )
 from .algebra import (
+    _v_composition,
+    _v_trig_amplitude,
+    _v_trig_period,
+    _v_trig_phase_shift,
+    _v_inverse_function,
+    _v_transformation,
     _v_abs_inequality,
     _v_abs_solve,
     _v_arithmetic_nth_term,
@@ -60,6 +66,8 @@ from .algebra import (
     _v_system_point_in_inequality,
 )
 from .geometry import (
+    _v_trig_law_of_cosines,
+    _v_trig_law_of_sines,
     _v_degree_radian_conversion,
     _v_exact_trig_value,
     _v_geo_circle_area,
@@ -78,6 +86,7 @@ from .geometry import (
 )
 from .data import (
     _v_classify,
+    _v_gcf,
     _v_commission,
     _v_estimate_percent,
     _v_markup_discount,
@@ -105,6 +114,12 @@ STRATEGIES = {
     "evaluate": _v_evaluate,
     "simplify": _v_simplify,
     "solve": _v_solve,
+    "inverse_function": _v_inverse_function,
+    "composition": _v_composition,
+    "transformation": _v_transformation,
+    "trig_amplitude": _v_trig_amplitude,
+    "trig_period": _v_trig_period,
+    "trig_phase_shift": _v_trig_phase_shift,
     "inequality": _v_inequality,
     "abs_solve": _v_abs_solve,
     "slope_from_points": _v_slope_from_points,
@@ -130,6 +145,8 @@ STRATEGIES = {
     "stat_mode": _v_stat_mode,
     "stat_range": _v_stat_range,
     "geo_pythagorean": _v_geo_pythagorean,
+    "trig_law_of_cosines": _v_trig_law_of_cosines,
+    "trig_law_of_sines": _v_trig_law_of_sines,
     "geo_circle_area": _v_geo_circle_area,
     "geo_circle_circumference": _v_geo_circle_circumference,
     "geo_triangle_area": _v_geo_triangle_area,
@@ -139,6 +156,7 @@ STRATEGIES = {
     "geo_tri_prism_volume": _v_geo_tri_prism_volume,
     "geo_tri_prism_sa": _v_geo_tri_prism_sa,
     "classify": _v_classify,
+    "gcf": _v_gcf,
     "estimate_percent": _v_estimate_percent,
     "markup_discount": _v_markup_discount,
     "percent_error": _v_percent_error,

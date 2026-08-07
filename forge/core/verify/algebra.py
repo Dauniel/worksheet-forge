@@ -770,3 +770,107 @@ def _v_arithmetic_series_sum(p: Problem) -> None:
     expected = sp.Rational(n, 2) * (2 * a1 + (n - 1) * d)
     if not _equal(expected, p.answer_expr):
         raise VerificationError(f"{p.topic}/{p.subskill}: sum should be {expected}")
+
+
+def _v_inverse_function(p: Problem) -> None:
+    """Compose the printed inverse with the printed function; require x.
+
+    This is the definition, re-derived: whatever the generator computed, the
+    printed key is only correct if f(f^-1(x)) simplifies to x.
+    """
+    x = sp.Symbol("x")
+    m = re.search(r"f\(x\)\s*=\s*([^$]+)", p.question_latex.strip().strip("$"))
+    if m is None:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no f(x) = ... in question")
+    f_expr = latex_to_sympy(m.group(1))
+
+    key = p.answer_latex.strip().strip("$")
+    inv = re.search(r"f\^\{-1\}\(x\)\s*=\s*(.+)$", key)
+    if inv is None:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no f^-1(x) = ... in key")
+    inv_expr = latex_to_sympy(inv.group(1))
+
+    if not _equal(inv_expr, p.answer_expr):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed inverse {inv_expr} does not match "
+            f"the verified answer {p.answer_expr}"
+        )
+    composed = sp.simplify(f_expr.subs(x, inv_expr))
+    if sp.simplify(composed - x) != 0:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: f(f^-1(x)) = {composed}, not x"
+        )
+
+
+def _v_composition(p: Problem) -> None:
+    """Re-read f and g off the question and compose them independently."""
+    x = sp.Symbol("x")
+    text = p.question_latex.strip().strip("$")
+    f_m = re.search(r"f\(x\)\s*=\s*([^,]+),", text)
+    g_m = re.search(r"g\(x\)\s*=\s*([^,]+),", text)
+    if not (f_m and g_m):
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read f and g")
+    f_expr = latex_to_sympy(f_m.group(1))
+    g_expr = latex_to_sympy(g_m.group(1))
+    expected = sp.expand(f_expr.subs(x, g_expr))
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: f(g(x)) = {expected}, key says {p.answer_expr}"
+        )
+    printed = latex_to_sympy(re.sub(r"^g\(x\)\s*=\s*", "", p.answer_latex.strip().strip("$")))
+    if not _equal(printed, expected):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed key {printed} != {expected}"
+        )
+
+
+def _v_transformation(p: Problem) -> None:
+    """The printed equation must expand to the verified transformed function."""
+    key = re.sub(r"^g\(x\)\s*=\s*", "", p.answer_latex.strip().strip("$"))
+    printed = latex_to_sympy(key)
+    if not _equal(sp.expand(printed), sp.expand(p.answer_expr)):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed key {printed} does not expand to "
+            f"{p.answer_expr}"
+        )
+
+
+_SINUSOID = re.compile(
+    r"y\s*=\s*(-?\d*)\\(?:sin|cos)\\left\("
+    r"(?:(\d+)\()?x\s*([+-])\s*(\d+)\)?"
+)
+
+
+def _sinusoid_params(p: Problem):
+    """Re-read (a, b, c) off the printed ``y = a f(b(x - c)) + d``."""
+    m = _SINUSOID.search(p.question_latex.replace(" ", ""))
+    if m is None:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: cannot read the sinusoid from "
+            f"{p.question_latex!r}"
+        )
+    lead, b_txt, sign, shift = m.groups()
+    a = -1 if lead == "-" else (1 if lead in ("", None) else int(lead))
+    b = int(b_txt) if b_txt else 1
+    # The equation prints (x - c); a printed "+" means c is negative.
+    c = int(shift) if sign == "-" else -int(shift)
+    return a, b, c
+
+
+def _v_trig_amplitude(p: Problem) -> None:
+    a, _, _ = _sinusoid_params(p)
+    if not _equal(abs(a), p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: amplitude is {abs(a)}")
+
+
+def _v_trig_period(p: Problem) -> None:
+    _, b, _ = _sinusoid_params(p)
+    expected = sp.nsimplify(2 * sp.pi / b)
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: period is {expected}")
+
+
+def _v_trig_phase_shift(p: Problem) -> None:
+    _, _, c = _sinusoid_params(p)
+    if not _equal(c, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: phase shift is {c}")
