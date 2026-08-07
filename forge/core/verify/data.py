@@ -4,6 +4,7 @@ problems, scientific notation, statistics, probability, and classification.
 
 from __future__ import annotations
 
+import math
 import re
 from typing import List
 
@@ -18,6 +19,21 @@ from .parsing import (
     _nums_any,
     latex_to_sympy,
 )
+
+_GCF = re.compile(r"\\operatorname\{GCF\}\\left\((\d+)(?:x\^\{(\d+)\})?,\s*(\d+)(?:x\^\{(\d+)\})?\\right\)")
+
+def _v_gcf(p: Problem) -> None:
+    match = _GCF.search(p.question_latex)
+    if not match:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read {p.question_latex!r}")
+    a, ax, b, bx = match.groups()
+    expected = sp.Integer(math.gcd(int(a), int(b)))
+    if ax is not None and bx is not None:
+        expected *= sp.Symbol("x") ** min(int(ax), int(bx))
+    elif ax is not None or bx is not None:
+        raise VerificationError(f"{p.topic}/{p.subskill}: mismatched monomial operands")
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: expected {expected}, key says {p.answer_expr}")
 
 
 _PERCENT_OF = re.compile(r"(-?[\d.]+)\s*\\?%\s*\$?\s*of\s*\$?\s*(-?[\d.]+)")

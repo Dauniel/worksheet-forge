@@ -49,6 +49,21 @@ def combine_like_terms(rng: random.Random, difficulty: str) -> Problem:
         expr = a * X + b + c * X + d
     return _mk(question, expr, "combine_like_terms", difficulty)
 
+@register("like_terms", "polynomial_like_terms")
+def polynomial_like_terms(rng: random.Random, difficulty: str) -> Problem:
+    """Combine repeated powers while keeping each exponent unchanged."""
+    degrees = (2,) if difficulty == "easy" else ((2, 1) if difficulty == "medium" else (3, 2, 1))
+    rendered, expr = [], sp.Integer(0)
+    for degree in degrees:
+        a, b = _c(rng, difficulty), _c(rng, difficulty)
+        while a + b == 0:
+            b = _c(rng, difficulty)
+        variable = "x" if degree == 1 else rf"x^{{{degree}}}"
+        rendered.extend((coeff(a, variable), coeff(b, variable)))
+        expr += (a + b) * X**degree
+    rng.shuffle(rendered)
+    return _mk(terms(*rendered), expr, "polynomial_like_terms", difficulty)
+
 
 @register("like_terms", "distribute_and_combine")
 def distribute_and_combine(rng: random.Random, difficulty: str) -> Problem:
