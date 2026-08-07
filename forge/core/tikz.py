@@ -54,6 +54,34 @@ def square_fig(s: int) -> str:
     return _wrap(body)
 
 
+def circle_fig(value: int, is_diameter: bool) -> str:
+    """A circle with either its radius or its diameter drawn and labeled.
+
+    The label carries its own name -- ``r = 7`` or ``d = 14`` -- because that
+    is the only thing distinguishing the two cases once the figure is
+    rendered, and the verifier re-derives the answer by reading it back. A
+    bare number would leave the picture ambiguous to both reader and checker.
+    """
+    ru = TARGET / 2  # the circle is always drawn the same size; only the label changes
+    # The label sits *on* the segment it names, filled white so the rule stops
+    # at its edges instead of striking through the text. Offsetting it clear of
+    # the line instead would leave it ambiguous which chord it labels.
+    style = "[fill=white, inner sep=1.5pt]"
+    if is_diameter:
+        spoke = rf"\draw ({-ru:.3f},0) -- ({ru:.3f},0);" "\n"
+        label = rf"\node{style} at (0,0) {{$d = {value}$}};"
+    else:
+        spoke = rf"\draw (0,0) -- ({ru:.3f},0);" "\n"
+        label = rf"\node{style} at ({ru / 2:.3f},0) {{$r = {value}$}};"
+    body = (
+        rf"\draw (0,0) circle ({ru:.3f});" "\n"
+        + spoke
+        + rf"\fill (0,0) circle (0.045);" "\n"
+        + label
+    )
+    return _wrap(body)
+
+
 def triangle_fig(b: int, h: int) -> str:
     u = _scale(b, h)
     bu, hu = b * u, h * u

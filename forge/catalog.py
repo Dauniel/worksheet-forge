@@ -248,6 +248,19 @@ CATALOG: Dict[str, dict] = {
             _s("area_square", "easy", columns=1),
             _s("area_triangle", "easy", columns=1),
             _s("area_trapezoid", "medium", columns=1),
+            # Circles get their own parts: "leave it in terms of pi" is a real
+            # instruction that must not appear over the rectangles, and area
+            # and circumference cannot share one honest sentence either.
+            _s("area_circle", "medium",
+               group="Area of Circles",
+               directions=("Find the area of each circle. Leave your answer "
+                           "in terms of $\\pi$."),
+               workspace="1.6cm", columns=1),
+            _s("circumference_circle", "medium",
+               group="Circumference of Circles",
+               directions=("Find the circumference of each circle. Leave your "
+                           "answer in terms of $\\pi$."),
+               workspace="1.6cm", columns=1),
             _s("volume_rect_prism", "medium",
                group="Volume of Prisms",
                directions="Find the volume of each prism.",

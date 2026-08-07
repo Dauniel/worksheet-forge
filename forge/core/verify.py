@@ -498,6 +498,45 @@ def _v_geo_square_area(p: Problem) -> None:
         raise VerificationError(f"{p.topic}/{p.subskill}: area should be {s * s}")
 
 
+def _circle_radius(p: Problem) -> sp.Integer:
+    """Read the radius back off the figure's own label.
+
+    The figure prints ``r = 7`` or ``d = 14``; which one it is determines the
+    answer, so it is re-read here rather than taken on the generator's word.
+    A diameter that is not even would make the radius fractional and is a bug
+    in the generator, not a legal problem.
+    """
+    m = re.search(r"([rd])\s*=\s*(\d+)", p.question_latex)
+    if m is None:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: circle figure has no 'r =' or 'd =' label"
+        )
+    name, n = m.group(1), sp.Integer(m.group(2))
+    if name == "r":
+        return n
+    if n % 2 != 0:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: odd diameter {n} gives a fractional radius"
+        )
+    return n / 2
+
+
+def _v_geo_circle_area(p: Problem) -> None:
+    r = _circle_radius(p)
+    expected = sp.pi * r**2
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(f"{p.topic}/{p.subskill}: area should be {expected}")
+
+
+def _v_geo_circle_circumference(p: Problem) -> None:
+    r = _circle_radius(p)
+    expected = 2 * sp.pi * r
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: circumference should be {expected}"
+        )
+
+
 def _v_geo_triangle_area(p: Problem) -> None:
     b, h = _nums(p.question_latex)
     expected = sp.Rational(b * h, 2)
@@ -1238,6 +1277,8 @@ STRATEGIES = {
     "word": _v_word,
     "geo_rectangle_area": _v_geo_rectangle_area,
     "geo_square_area": _v_geo_square_area,
+    "geo_circle_area": _v_geo_circle_area,
+    "geo_circle_circumference": _v_geo_circle_circumference,
     "geo_triangle_area": _v_geo_triangle_area,
     "geo_trapezoid_area": _v_geo_trapezoid_area,
     "geo_rect_prism_volume": _v_geo_rect_prism_volume,

@@ -11,24 +11,39 @@ so a TikZ regression fails in CI, not on a tutor's laptop at seed 743.
 
 from __future__ import annotations
 
+import dataclasses
 import random
+import re
 import shutil
 
 import pytest
+import sympy as sp
 
 from forge.core.problem import DIFFICULTIES
 from forge.core.registry import all_generators
 from forge.core.render import compile_pdf, render_tex
-from forge.core.verify import verify_all
+from forge.core.verify import VerificationError, verify_all
 
 FUZZ_RANGE = 1000
 STRIDE = 17  # ~59 seeds per subskill, spread across the whole fuzz range
 
+# Every geometry subskill belongs here -- this list is what the compile smoke
+# test actually renders, so a subskill missing from it is a subskill whose
+# TikZ nobody checks.
 GEOMETRY_SUBSKILLS = (
     "area_rectangle", "area_square", "area_triangle", "area_trapezoid",
+    "area_circle", "circumference_circle",
     "volume_rect_prism", "surface_area_rect_prism",
     "volume_tri_prism", "surface_area_tri_prism",
 )
+
+
+def test_every_geometry_subskill_is_in_the_smoke_test():
+    """Guards the list above from silently falling behind the registry."""
+    registered = {sub for topic, sub in all_generators() if topic == "geometry"}
+    assert registered == set(GEOMETRY_SUBSKILLS), (
+        f"missing from smoke test: {sorted(registered - set(GEOMETRY_SUBSKILLS))}"
+    )
 
 
 def _sample_problems():
@@ -66,3 +81,52 @@ def test_geometry_tikz_compiles_across_the_fuzz_range(tmp_path):
     pdf = compile_pdf(tex, tmp_path / "geometry_tikz_smoke.pdf")
     assert pdf.exists()
     assert pdf.stat().st_size > 10_000
+
+
+def test_circle_figures_label_which_dimension_they_show():
+    """A bare number would leave the picture ambiguous to reader and verifier."""
+    fn = all_generators()[("geometry", "area_circle")]
+    seen = set()
+    for i in range(200):
+        q = fn(random.Random(i), "medium").question_latex
+        m = re.search(r"([rd]) = (\d+)", q)
+        assert m, "circle figure must label r or d"
+        seen.add(m.group(1))
+    assert seen == {"r", "d"}, f"both cases should appear, saw {seen}"
+
+
+def test_circle_diameters_are_always_even():
+    """An odd diameter would make the radius fractional and the answer ugly."""
+    for sub in ("area_circle", "circumference_circle"):
+        fn = all_generators()[("geometry", sub)]
+        for diff in ("easy", "medium", "hard"):
+            for i in range(150):
+                q = fn(random.Random(i), diff).question_latex
+                m = re.search(r"d = (\d+)", q)
+                if m:
+                    assert int(m.group(1)) % 2 == 0, f"{sub}/{diff}: odd diameter"
+
+
+def test_circle_answers_are_exact_multiples_of_pi():
+    """No decimals: the answer stays symbolic so it is exactly checkable."""
+    for sub in ("area_circle", "circumference_circle"):
+        fn = all_generators()[("geometry", sub)]
+        for i in range(150):
+            p = fn(random.Random(i), "hard")
+            coeff = p.answer_expr / sp.pi
+            assert coeff.is_Integer, f"{sub}: {p.answer_expr} is not an integer times pi"
+
+
+def test_circle_verifier_catches_a_wrong_area():
+    """The diameter case is the one a student (or a bug) gets wrong."""
+    fn = all_generators()[("geometry", "area_circle")]
+    p = next(
+        fn(random.Random(i), "medium")
+        for i in range(100)
+        if "d = " in fn(random.Random(i), "medium").question_latex
+    )
+    # Squaring the printed diameter instead of halving it first.
+    d = sp.Integer(re.search(r"d = (\d+)", p.question_latex).group(1))
+    wrong = dataclasses.replace(p, answer_expr=sp.pi * d**2)
+    with pytest.raises(VerificationError):
+        verify_all([wrong])

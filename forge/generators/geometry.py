@@ -29,6 +29,9 @@ UNITS = ("units", "cm", "in", "ft", "m")
 SQUARE_SIZE = {"easy": (2, 12), "medium": (4, 18), "hard": (6, 25)}
 SIZE = {"easy": (3, 10), "medium": (4, 14), "hard": (6, 18)}
 LENGTH = {"easy": (2, 6), "medium": (3, 8), "hard": (4, 10)}
+# Radii stay small: the answer is an exact multiple of pi (r^2 for area), so
+# hard already reaches 225*pi without the arithmetic leaving mental range.
+RADIUS = {"easy": (1, 8), "medium": (2, 12), "hard": (3, 15)}
 # Small, well-proportioned Pythagorean triples only -- nothing that draws as
 # an unusable sliver.
 _PRIMITIVE_TRIPLES = ((3, 4, 5), (6, 8, 10), (5, 12, 13), (8, 15, 17))
@@ -69,6 +72,21 @@ def _proportioned(rng: random.Random, base: int, lo_ratio: float, hi_ratio: floa
     return rng.randint(lo, hi)
 
 
+def _circle_dims(rng: random.Random, difficulty: str):
+    """Return ``(radius, labeled_value, is_diameter)`` for a circle figure.
+
+    Half the time the figure is labeled with a diameter instead of a radius,
+    which is the step students actually miss -- halving before squaring. The
+    diameter case draws an even value so the radius stays a whole number and
+    the answer stays an exact multiple of pi.
+    """
+    lo, hi = RADIUS[difficulty]
+    r = rng.randint(lo, hi)
+    if rng.random() < 0.5:
+        return r, 2 * r, True
+    return r, r, False
+
+
 def _mk(question: str, value, subskill: str, difficulty: str, kind: str, unit_word: str) -> Problem:
     value = sp.nsimplify(value)
     answer_latex = f"${sp.latex(value)}$ {unit_word}"
@@ -107,6 +125,24 @@ def area_square(rng: random.Random, difficulty: str) -> Problem:
     unit = pick(rng, UNITS)
     question = _caption(unit) + tikz.square_fig(s)
     return _mk(question, s * s, "area_square", difficulty, "geo_square_area", f"square {unit}")
+
+
+@register("geometry", "area_circle")
+def area_circle(rng: random.Random, difficulty: str) -> Problem:
+    r, value, is_d = _circle_dims(rng, difficulty)
+    unit = pick(rng, UNITS)
+    question = _caption(unit) + tikz.circle_fig(value, is_d)
+    return _mk(question, sp.pi * r**2, "area_circle", difficulty,
+               "geo_circle_area", f"square {unit}")
+
+
+@register("geometry", "circumference_circle")
+def circumference_circle(rng: random.Random, difficulty: str) -> Problem:
+    r, value, is_d = _circle_dims(rng, difficulty)
+    unit = pick(rng, UNITS)
+    question = _caption(unit) + tikz.circle_fig(value, is_d)
+    return _mk(question, 2 * sp.pi * r, "circumference_circle", difficulty,
+               "geo_circle_circumference", unit)
 
 
 @register("geometry", "area_triangle")

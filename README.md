@@ -104,7 +104,7 @@ bug), `3` LaTeX failed.
 `unit_rates`, `systems`, `quadratics`, `rational_expressions`,
 `polynomials`, `variation`, `radical_equations`, `graphing`,
 `complex_numbers`, `exponential_logarithms`, `sequences_series`,
-`right_triangle_trig`, `unit_circle` — 99 generators in total. Run
+`right_triangle_trig`, `unit_circle` — 101 generators in total. Run
 `python -m forge topics` for the current list with subskills.
 
 `graphing` is scoped to point-testing (`is $(x, y)$ a solution?`), not shaded
