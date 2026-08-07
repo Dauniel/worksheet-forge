@@ -32,7 +32,13 @@ LENGTH = {"easy": (2, 6), "medium": (3, 8), "hard": (4, 10)}
 # Small, well-proportioned Pythagorean triples only -- nothing that draws as
 # an unusable sliver.
 _PRIMITIVE_TRIPLES = ((3, 4, 5), (6, 8, 10), (5, 12, 13), (8, 15, 17))
-SCALE = {"easy": (1,), "medium": (1, 2), "hard": (1, 2)}
+# medium and hard were identical here, so the two triangular-prism subskills
+# accepted a difficulty and ignored it -- the same latent bug exponents.py:19
+# records. Magnitude is free to grow: tikz._scale normalizes every figure to a
+# fixed target size, so only the triple's aspect ratio affects drawability and
+# scaling it uniformly leaves that untouched. Hard always scales up, so its
+# smallest base is 6-8-10 rather than 3-4-5.
+SCALE = {"easy": (1,), "medium": (1, 2), "hard": (2, 3)}
 
 
 def _triple(rng: random.Random, difficulty: str):
