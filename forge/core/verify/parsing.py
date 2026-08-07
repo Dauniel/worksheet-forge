@@ -15,12 +15,17 @@ import sympy as sp
 from sympy.parsing.sympy_parser import (
     implicit_multiplication,
     parse_expr,
+    rationalize,
     standard_transformations,
 )
 
 
 
-_TRANSFORMS = standard_transformations + (implicit_multiplication,)
+# ``rationalize`` converts decimal literals to exact Rationals at tokenize
+# time, before any arithmetic happens. Without it parse_expr evaluates
+# 11.7 - 10.9 in binary floats to 0.7999999999999998, and no comparison
+# afterwards can recover the 4/5 the worksheet actually means.
+_TRANSFORMS = standard_transformations + (implicit_multiplication, rationalize)
 
 class VerificationError(AssertionError):
     pass
@@ -91,6 +96,15 @@ def latex_to_sympy(latex: str) -> sp.Expr:
         expr = parse_expr(s, transformations=_TRANSFORMS, evaluate=True)
     except (SyntaxError, TypeError, sp.SympifyError) as e:
         raise VerificationError(f"cannot parse {latex!r} -> {s!r}: {e}") from None
+    # A decimal printed on a worksheet denotes an exact value: 11.7 means
+    # 117/10, not the nearest double. Converting at parse time keeps the
+    # arithmetic exact all the way through -- otherwise 11.7 - 10.9 evaluates
+    # to 0.7999999999999998 and no comparison can rescue it afterwards.
+    # A point like "(3, 5)" parses to a plain Python tuple, which has no
+    # .atoms -- only expressions get the float conversion.
+    floats = expr.atoms(sp.Float) if hasattr(expr, "atoms") else ()
+    if floats:
+        expr = expr.xreplace({f: sp.Rational(str(f)) for f in floats})
     return expr
 
 _REL_TOKEN = re.compile(r"\\geq|\\leq|\\ge|\\le|\\gt|\\lt|<=|>=|<|>")
