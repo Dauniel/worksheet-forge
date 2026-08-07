@@ -6,15 +6,18 @@ Algebra 2 / Trig topics not yet covered, from the original gap-analysis.
 
 ## Algebra 2
 
-- Polynomials: synthetic division, end behavior, factoring higher-degree
-- Rational functions: asymptotes, holes, solving rational equations
+- Polynomials: end behavior (synthetic division and factoring by grouping
+  are done)
+- Rational functions: asymptotes, holes (solving rational equations is done)
 - Matrices / 3-variable systems
 - Conic sections: circle, parabola, ellipse, hyperbola (standard forms)
-- Piecewise functions, inverse functions, function transformations
+- Piecewise functions (inverse functions and transformations are done,
+  as topic `functions`)
 
 ## Trigonometry
 
-- Law of sines / law of cosines
-- Graphing trig functions: amplitude, period, phase shift
+`oblique_trig` (law of sines/cosines) and `trig_graphs` (amplitude, period,
+phase shift) are done.
+
 - Trig identities (Pythagorean, sum/difference, double angle)
 - Solving trig equations, inverse trig functions

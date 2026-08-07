@@ -12,8 +12,9 @@ Built for tutoring. Two guarantees drive the whole design:
    independently of how the generator produced it — the printed question is
    parsed back into sympy and re-solved. Any mismatch fails the build loudly.
 
-Each build produces two PDFs: a teacher copy with a consolidated answer key,
-and a clean student copy containing no answer content at all.
+Each build produces exactly one PDF: the problems, then a consolidated answer
+key on its own page. The student works the sheet and checks their own answers
+against it — there is no separate answer-free copy.
 
 ## Install
 
@@ -105,7 +106,8 @@ bug), `3` LaTeX failed.
 `polynomials`, `variation`, `radical_equations`, `graphing`,
 `complex_numbers`, `exponential_logarithms`, `sequences_series`,
 `right_triangle_trig`, `unit_circle`, `statistics`, `scientific_notation`,
-`probability` — 30 topics, 114 generators in total. Run
+`probability`, `functions`, `oblique_trig`, `trig_graphs` — 33 topics,
+125 generators in total. Run
 `python -m forge topics` for the current list with subskills, which is the
 authoritative one; the counts here are a snapshot and drift as topics land.
 
@@ -140,7 +142,7 @@ text, catching model/prose drift.
 pytest
 ```
 
-169 tests. Every generator is fuzzed across 1000 seeds for exceptions,
+Every generator is fuzzed across 1000 seeds for exceptions,
 populated fingerprints, and answer verification. Also covered: determinism
 (same seed, byte-identical output), variance (no problem is first more than 3
 times in 50 runs), in-worksheet uniqueness, quota enforcement, and a sweep for
