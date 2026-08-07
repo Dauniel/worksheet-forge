@@ -116,3 +116,36 @@ def test_deliver_refuses_to_clobber_an_existing_sheet(tmp_path, monkeypatch):
                "--out", str(tmp_path / "stage")])
     assert rc == 1
     assert (dest / "2026-08-06_Testy.pdf").read_bytes() == b"already delivered"
+
+
+def test_quick_can_deliver_directly(tmp_path, monkeypatch):
+    """`quick --deliver-to` files the same trio as `deliver`, no --save hop."""
+    dest_root = tmp_path / "worksheets"
+    monkeypatch.setattr("forge.cli.WORKSHEETS", dest_root)
+
+    rc = main(["quick", "negatives/add_sub_integers:3", "--deliver-to", "Testy_Math",
+               "--date", "2026-08-07", "--seed", "11",
+               "--out", str(tmp_path / "stage")])
+    assert rc == 0
+
+    dest = dest_root / "Testy_Math"
+    for suffix in (".pdf", "_key.tex", "_spec.yaml"):
+        assert (dest / f"2026-08-07_Testy{suffix}").exists(), suffix
+    filed = yaml.safe_load((dest / "2026-08-07_Testy_spec.yaml").read_text())
+    assert filed["seed"] == 11
+
+
+def test_quick_deliver_refuses_before_building(tmp_path, monkeypatch):
+    """A taken slot costs no compile: nothing is staged before the refusal."""
+    dest_root = tmp_path / "worksheets"
+    monkeypatch.setattr("forge.cli.WORKSHEETS", dest_root)
+    dest = dest_root / "Testy_Math"
+    dest.mkdir(parents=True)
+    (dest / "2026-08-07_Testy.pdf").write_bytes(b"already delivered")
+
+    stage = tmp_path / "stage"
+    rc = main(["quick", "negatives/add_sub_integers:3", "--deliver-to", "Testy_Math",
+               "--date", "2026-08-07", "--seed", "11", "--out", str(stage)])
+    assert rc == 1
+    assert (dest / "2026-08-07_Testy.pdf").read_bytes() == b"already delivered"
+    assert not stage.exists(), "refused early, so nothing should have been staged"
