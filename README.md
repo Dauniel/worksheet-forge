@@ -106,8 +106,9 @@ bug), `3` LaTeX failed.
 `polynomials`, `variation`, `radical_equations`, `graphing`,
 `complex_numbers`, `exponential_logarithms`, `sequences_series`,
 `right_triangle_trig`, `unit_circle`, `statistics`, `scientific_notation`,
-`probability`, `functions`, `oblique_trig`, `trig_graphs` — 33 topics,
-125 generators in total. Run
+`probability`, `functions`, `oblique_trig`, `trig_graphs`, `gcf`,
+`decimals`, `lcm`, `angles`, `coordinate` — 38 topics, 159 generators in
+total. Run
 `python -m forge topics` for the current list with subskills, which is the
 authoritative one; the counts here are a snapshot and drift as topics land.
 

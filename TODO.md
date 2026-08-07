@@ -11,8 +11,8 @@ Algebra 2 / Trig topics not yet covered, from the original gap-analysis.
 - Rational functions: asymptotes, holes (solving rational equations is done)
 - Matrices / 3-variable systems
 - Conic sections: circle, parabola, ellipse, hyperbola (standard forms)
-- Piecewise functions (inverse functions and transformations are done,
-  as topic `functions`)
+- Piecewise functions (inverse, composition, evaluation, domain/range,
+  transformations and literal equations are done, as topic `functions`)
 
 ## Trigonometry
 
@@ -21,3 +21,20 @@ phase shift) are done.
 
 - Trig identities (Pythagorean, sum/difference, double angle)
 - Solving trig equations, inverse trig functions
+
+## Covered since the original gap analysis
+
+Beyond the list above, these landed as their own topics: `decimals`,
+`statistics`, `probability` (including permutations/combinations),
+`scientific_notation`, `gcf`, `lcm` (with prime factorization), `angles`,
+`coordinate` (distance, midpoint, translations, reflections), plus circles,
+the Pythagorean theorem and curved solids inside `geometry`, compound
+inequalities, and exponential growth/decay.
+
+## Deliberately not done
+
+- **Polynomial end behavior** and **describing a transformation in words**.
+  Both have prose answers that cannot be checked symbolically, so they would
+  be the only weakly-verified problems in the tool. They need a
+  classification-style verifier (see `number_sense.classify`) before they are
+  worth adding.
