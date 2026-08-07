@@ -7,6 +7,8 @@ once outside the repo entirely. These tests give the paragraph teeth.
 
 from __future__ import annotations
 
+import re
+
 import yaml
 import pytest
 
@@ -26,34 +28,47 @@ LEGACY_INCOMPLETE = {
 }
 
 
+# A delivered worksheet is exactly <YYYY-MM-DD>_<Name>.pdf. A folder may also
+# hold companion artifacts (a separately saved answer key, a source .tex);
+# those are not deliveries and must not be demanded to have their own spec.
+_DELIVERY = re.compile(r"^\d{4}-\d{2}-\d{2}_[A-Za-z]+$")
+
+
 def _delivered_sets():
-    """Every (folder, stem) that has a PDF filed under tutor/worksheets/."""
-    for folder in sorted(p for p in WORKSHEETS.iterdir() if p.is_dir()):
-        for pdf in sorted(folder.glob("*.pdf")):
-            yield folder, pdf.stem
+    """Every (student, dated folder, stem) filed under tutor/worksheets/."""
+    for student in sorted(p for p in WORKSHEETS.iterdir() if p.is_dir()):
+        for pdf in sorted(student.glob("*/*.pdf")):
+            if _DELIVERY.match(pdf.stem):
+                yield student, pdf.parent, pdf.stem
 
 
 def test_every_delivered_sheet_has_spec_and_key():
     missing = []
-    for folder, stem in _delivered_sets():
-        if (folder.name, stem) in LEGACY_INCOMPLETE:
+    for student, folder, stem in _delivered_sets():
+        manual_source = folder / f".src_{stem}.tex"
+        if manual_source.exists():
+            assert r"\section*{Answer Key}" in manual_source.read_text(), (
+                f"manual worksheet source has no attached answer key: {manual_source}"
+            )
+            continue
+        if (student.name, stem) in LEGACY_INCOMPLETE:
             continue
         for suffix in ("_spec.yaml", "_key.tex"):
             if not (folder / f"{stem}{suffix}").exists():
-                missing.append(f"{folder.name}/{stem}{suffix}")
+                missing.append(f"{student.name}/{folder.name}/{stem}{suffix}")
     assert not missing, "delivered worksheets missing artifacts:\n  " + "\n  ".join(missing)
 
 
 def test_delivered_specs_record_their_seed():
     """Without the seed the sheet cannot be reproduced from the folder alone."""
     unseeded = []
-    for folder, stem in _delivered_sets():
+    for student, folder, stem in _delivered_sets():
         spec_path = folder / f"{stem}_spec.yaml"
         if not spec_path.exists():
             continue  # covered by the test above
         spec = yaml.safe_load(spec_path.read_text())
         if "seed" not in spec:
-            unseeded.append(f"{folder.name}/{spec_path.name}")
+            unseeded.append(f"{student.name}/{folder.name}/{spec_path.name}")
     if unseeded:
         pytest.xfail("specs filed before `forge deliver` recorded no seed: "
                      + ", ".join(unseeded))
@@ -61,8 +76,18 @@ def test_delivered_specs_record_their_seed():
 
 def test_no_stray_files_at_the_worksheets_root():
     """Worksheets live in a student folder, never loose at the root."""
-    stray = [p.name for p in WORKSHEETS.iterdir() if p.is_file()]
+    stray = [p.name for p in WORKSHEETS.iterdir()
+             if p.is_file() and not p.name.startswith(".")]
     assert not stray, f"files loose in tutor/worksheets/: {stray}"
+
+
+def test_no_dated_files_loose_in_student_folders():
+    """Every dated artifact belongs in the matching YYYY-MM-DD folder."""
+    stray = []
+    for student in sorted(p for p in WORKSHEETS.iterdir() if p.is_dir()):
+        stray.extend(str(p.relative_to(WORKSHEETS)) for p in student.iterdir()
+                     if p.is_file() and not p.name.startswith("."))
+    assert not stray, "dated files loose in student folders: " + ", ".join(stray)
 
 
 def test_deliver_files_the_trio_and_records_the_seed(tmp_path, monkeypatch):
@@ -86,7 +111,7 @@ def test_deliver_files_the_trio_and_records_the_seed(tmp_path, monkeypatch):
                "--out", str(tmp_path / "stage")])
     assert rc == 0
 
-    dest = dest_root / "Testy_Math"
+    dest = dest_root / "Testy_Math" / "2026-08-06"
     assert (dest / "2026-08-06_Testy_key.tex").exists()
     filed = yaml.safe_load((dest / "2026-08-06_Testy_spec.yaml").read_text())
     assert filed["seed"] == 5, "delivered spec must record the seed"
@@ -107,7 +132,7 @@ def test_deliver_refuses_to_clobber_an_existing_sheet(tmp_path, monkeypatch):
 
     dest_root = tmp_path / "worksheets"
     monkeypatch.setattr("forge.cli.WORKSHEETS", dest_root)
-    dest = dest_root / "Testy_Math"
+    dest = dest_root / "Testy_Math" / "2026-08-06"
     dest.mkdir(parents=True)
     (dest / "2026-08-06_Testy.pdf").write_bytes(b"already delivered")
 
@@ -128,7 +153,7 @@ def test_quick_can_deliver_directly(tmp_path, monkeypatch):
                "--out", str(tmp_path / "stage")])
     assert rc == 0
 
-    dest = dest_root / "Testy_Math"
+    dest = dest_root / "Testy_Math" / "2026-08-07"
     for suffix in (".pdf", "_key.tex", "_spec.yaml"):
         assert (dest / f"2026-08-07_Testy{suffix}").exists(), suffix
     filed = yaml.safe_load((dest / "2026-08-07_Testy_spec.yaml").read_text())
@@ -139,7 +164,7 @@ def test_quick_deliver_refuses_before_building(tmp_path, monkeypatch):
     """A taken slot costs no compile: nothing is staged before the refusal."""
     dest_root = tmp_path / "worksheets"
     monkeypatch.setattr("forge.cli.WORKSHEETS", dest_root)
-    dest = dest_root / "Testy_Math"
+    dest = dest_root / "Testy_Math" / "2026-08-07"
     dest.mkdir(parents=True)
     (dest / "2026-08-07_Testy.pdf").write_bytes(b"already delivered")
 

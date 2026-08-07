@@ -110,7 +110,9 @@ def _prepare_delivery(args: argparse.Namespace, student: str):
     checked *before* building, so a refusal costs no compile.
     """
     date = args.date or datetime.now().strftime("%Y-%m-%d")
-    dest = WORKSHEETS / student
+    # Each delivery is self-contained in its own dated folder so multiple
+    # worksheets and all of their companion artifacts never mingle.
+    dest = WORKSHEETS / student / date
     stem = f"{date}_{student.split('_')[0]}"
 
     final_pdf = dest / f"{stem}.pdf"
@@ -129,7 +131,7 @@ def _prepare_delivery(args: argparse.Namespace, student: str):
 
 
 def _file_delivery(args, spec_path: Path, out_dir: Path, dest: Path, stem: str) -> None:
-    """Copy the built trio out of staging and into the student's folder."""
+    """Copy the built trio out of staging and into its dated folder."""
     dest.mkdir(parents=True, exist_ok=True)
     shutil.copy2(next(out_dir.glob("*_key.pdf")), dest / f"{stem}.pdf")
     shutil.copy2(next(out_dir.glob("*_key.tex")), dest / f"{stem}_key.tex")
@@ -155,7 +157,8 @@ def _deliver_cmd(args: argparse.Namespace) -> int:
     Three conventions used to live only in CLAUDE.md, and all three were broken
     the first time an agent followed the prose: build with ``--no-history`` so
     the seed alone reproduces the sheet, write the trio (spec, key .tex, PDF)
-    into ``tutor/worksheets/<Student>/``, and leave nothing behind in ``out/``.
+    into ``tutor/worksheets/<Student>/<YYYY-MM-DD>/``, and leave nothing behind
+    in ``out/``.
     This command is the executable version of that paragraph.
     """
     prepared = _prepare_delivery(args, args.student)
@@ -231,7 +234,7 @@ def main(argv=None) -> int:
     q.add_argument("--name", default="quick", help="basename for the generated spec")
     q.add_argument("--save", default="", help="write the generated spec here")
     q.add_argument("--deliver-to", default="", metavar="STUDENT",
-                   help=("file the result under tutor/worksheets/STUDENT/ as a "
+                   help=("file the result under tutor/worksheets/STUDENT/DATE/ as a "
                          "delivered worksheet, exactly as `forge deliver` would"))
     q.add_argument("--date", default="", help="YYYY-MM-DD for --deliver-to (default: today)")
     q.add_argument("--force", action="store_true",
@@ -241,7 +244,7 @@ def main(argv=None) -> int:
 
     d = sub.add_parser(
         "deliver",
-        help="build a worksheet and file it under tutor/worksheets/<Student>/",
+        help="build a worksheet and file it under tutor/worksheets/<Student>/<Date>/",
         description=(
             "Examples:\n"
             "  forge deliver specs/rachel.yaml --student Rachel_Math\n"

@@ -86,11 +86,16 @@ delivered for that date.
 python -m forge deliver specs/rachel.yaml --student Rachel_Math --seed 806
 ```
 
-Worksheets given to a student live in `tutor/worksheets/<Student>_<Subject>/`
-(e.g. `Rachel_Math`, `Jean_English`; a student taking two subjects gets two
-folders) as `<YYYY-MM-DD>_<Name>_spec.yaml`, `..._key.tex`, and a single
+Worksheets given to a student live in
+`tutor/worksheets/<Student>_<Subject>/<YYYY-MM-DD>/` (e.g.
+`Rachel_Math/2026-08-06`, `Jean_English/2026-08-07`; a student taking two
+subjects gets two student folders). Each dated folder contains
+`<YYYY-MM-DD>_<Name>_spec.yaml`, `..._key.tex`, and a single
 `<YYYY-MM-DD>_<Name>.pdf` — problems then key, not a merge. Some worksheets
 also carry a `..._student.tex`; that is historical and no longer produced.
+Manually authored English sheets instead keep a self-contained
+`.src_<YYYY-MM-DD>_<Name>.tex` beside the PDF; that source must include its
+answer key.
 
 `out/` is gitignored, and nothing delivered may be left there. Worksheets are
 reproducible from the spec plus the seed, so delivered copies are built with
@@ -101,7 +106,8 @@ could not rebuild it. The seed is written into the delivered spec as a `seed:`
 key so the folder alone is enough to rebuild.
 
 `tests/test_delivery.py` holds this line: every filed PDF must have its spec and
-key beside it, and nothing may sit loose at the worksheets root. Sheets filed
+key beside it in a dated folder, and nothing may sit loose at the worksheets
+root or directly inside a student folder. Sheets filed
 before this command existed are grandfathered in `LEGACY_INCOMPLETE` — their
 seeds were never recorded, so a rebuilt key would not match the PDF the student
 received. Do not add to that list.
