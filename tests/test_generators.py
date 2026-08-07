@@ -51,6 +51,12 @@ SMALL_REACHABLE_SPACE = {
         "same triple pool as pythagorean_hypotenuse, doubled because "
         "either leg may be the unknown",
     ),
+    ("angles", "polygon_interior_sum"): (
+        14,  # SIDES["medium"] = 5..18
+        "a polygon interior-angle sum varies only in the number of sides -- "
+        "there is nothing else in the sentence to sample, so the reachable "
+        "space is exactly the size of the side-count range",
+    ),
     ("roots", "square_root"): (
         9,  # bases 2..10 (SQUARE_BASE["medium"]), bare sqrt(n^2) = n only
         "positive perfect squares only, bases 2-10 at medium difficulty "

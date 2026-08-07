@@ -75,6 +75,18 @@ SMALL_REACHABLE_SPACE = {
         "same triple pool as pythagorean_hypotenuse, doubled because "
         "either leg may be the unknown",
     ),
+    ("angles", "polygon_interior_sum"): (
+        10,  # SIDES["easy"] = 3..12
+        "a polygon interior-angle sum varies only in the number of sides -- "
+        "there is nothing else in the sentence to sample, so the reachable "
+        "space is exactly the size of the side-count range",
+    ),
+    ("geometry", "volume_sphere"): (
+        60,  # 12 radii (SOLID_R["easy"] = 1..12) x 5 UNITS
+        "a sphere is one sampled dimension and a unit label -- the same "
+        "bounded shape as area_square. Widening the radius further is the "
+        "only other axis, and 4/3*pi*r^3 leaves mental range fast",
+    ),
     ("geometry", "area_square"): (
         55,  # 11 side lengths (SQUARE_SIZE["easy"] = 2..12) x 5 UNITS
         "a square is one sampled dimension and a unit label -- there is "

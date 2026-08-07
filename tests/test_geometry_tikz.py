@@ -34,6 +34,9 @@ GEOMETRY_SUBSKILLS = (
     "area_rectangle", "area_square", "area_triangle", "area_trapezoid",
     "area_circle", "circumference_circle",
     "pythagorean_hypotenuse", "pythagorean_leg",
+    # Prose-only (no TikZ figure), but listed so the registry guard below
+    # stays exact -- the compile test simply renders them as text.
+    "volume_cylinder", "volume_cone", "volume_sphere", "surface_area_cylinder",
     "volume_rect_prism", "surface_area_rect_prism",
     "volume_tri_prism", "surface_area_tri_prism",
 )

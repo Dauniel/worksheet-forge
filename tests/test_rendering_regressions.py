@@ -67,24 +67,24 @@ def test_zero_slope_renders_without_x():
 def test_answers_are_never_floats():
     """No decimal answers -- they are almost always a float artifact.
 
-    ``scientific_notation`` is the one honest exception: converting between
-    ``3.4 x 10^-3`` and ``0.0034`` *is* the skill, and both forms carry a
-    decimal point by definition. Its exactness is held instead by
-    ``test_scientific_notation_answers_stay_exact`` below -- the point of this
-    rule is to catch 0.30000000000000004, not to ban the digit.
+    ``scientific_notation`` and ``decimals`` are the honest exceptions: for
+    both, a decimal point *is* the subject matter -- converting between
+    ``3.4 x 10^-3`` and ``0.0034``, or between ``0.35`` and ``7/20``. Their
+    exactness is held instead by ``test_decimal_answers_stay_exact`` below;
+    the point of this rule is to catch 0.30000000000000004, not the digit.
     """
     for key, seed, p in _texts():
-        if key[0] == "scientific_notation":
+        if key[0] in ("scientific_notation", "decimals"):
             continue
         assert "." not in p.answer_latex, f"{key} seed {seed}: {p.answer_latex}"
 
 
-def test_scientific_notation_answers_stay_exact():
-    """Its decimals must be exact rationals, never binary floats."""
+def test_decimal_answers_stay_exact():
+    """Their decimals must be exact rationals, never binary floats."""
     import sympy as sp
 
     for key, seed, p in _texts():
-        if key[0] != "scientific_notation":
+        if key[0] not in ("scientific_notation", "decimals"):
             continue
         assert not p.answer_expr.atoms(sp.Float), (
             f"{key} seed {seed}: answer carries a Float, not an exact value: "
