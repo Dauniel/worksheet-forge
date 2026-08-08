@@ -1,0 +1,101 @@
+title: Honors Algebra 1 Readiness
+header: Honors Algebra 1 Readiness
+seed: 10807
+sections:
+- name: 'Part A: Negative Numbers and Order of Operations'
+  directions: Evaluate each expression completely. Show each major order-of-operations step.
+  workspace: 1.1cm
+  columns: 2
+  problems:
+  - {topic: negatives, subskill: add_sub_integers, count: 2, difficulty: medium}
+  - {topic: negatives, subskill: mul_div_integers, count: 2, difficulty: medium}
+  - {topic: negatives, subskill: mixed_operations, count: 2, difficulty: medium}
+  - {topic: negatives, subskill: order_of_operations, count: 2, difficulty: medium}
+  - {topic: negatives, subskill: order_of_operations, count: 2, difficulty: hard}
+- name: 'Part B: Ratios, Proportions, and Percentages'
+  directions: Solve each problem. Show your setup and simplify your answer.
+  workspace: 1.4cm
+  columns: 2
+  problems:
+  - {topic: ratios_percents, subskill: proportions, count: 3, difficulty: medium}
+  - {topic: ratios_percents, subskill: percent_of, count: 3, difficulty: medium}
+  - {topic: ratios_percents, subskill: percent_change, count: 2, difficulty: medium}
+  - {topic: unit_rates, subskill: unit_rate, count: 2, difficulty: medium}
+- name: 'Part C: Exponents, Roots, and Scientific Notation'
+  directions: Simplify or evaluate completely. Write powers with positive exponents.
+  workspace: 1.2cm
+  columns: 2
+  problems:
+  - {topic: exponents, subskill: product_rule, count: 2, difficulty: medium}
+  - {topic: exponents, subskill: quotient_rule, count: 2, difficulty: medium}
+  - {topic: exponents, subskill: power_rule, count: 2, difficulty: medium}
+  - {topic: roots, subskill: square_root, count: 1, difficulty: medium}
+  - {topic: roots, subskill: cube_root, count: 1, difficulty: medium}
+  - {topic: scientific_notation, subskill: to_scientific, count: 1, difficulty: medium}
+  - {topic: scientific_notation, subskill: multiply_divide, count: 1, difficulty: medium}
+- name: 'Part D: Simplifying and Factoring Expressions'
+  directions: Simplify or factor as directed. Show distribution and like-term steps.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - {topic: like_terms, subskill: combine_like_terms, count: 3, difficulty: medium}
+  - {topic: like_terms, subskill: polynomial_like_terms, count: 3, difficulty: medium}
+  - {topic: like_terms, subskill: distribute_and_combine, count: 2, difficulty: medium}
+  - {topic: gcf, subskill: monomial, count: 2, difficulty: medium}
+- name: 'Part E: Solving Linear Equations'
+  directions: Solve each equation for $x$. Show your steps and check when practical.
+  workspace: 1.9cm
+  columns: 2
+  problems:
+  - {topic: linear_equations, subskill: two_step, count: 2, difficulty: medium}
+  - {topic: linear_equations, subskill: with_distribution, count: 2, difficulty: medium}
+  - {topic: linear_equations, subskill: multi_step_both_sides, count: 2, difficulty: medium}
+  - {topic: linear_equations, subskill: fractional, count: 2, difficulty: hard}
+  - {topic: linear_equations, subskill: proportion, count: 2, difficulty: hard}
+- name: 'Part F: Linear Inequalities'
+  directions: Solve each inequality for $x$. Reverse the inequality when required.
+  workspace: 1.7cm
+  columns: 2
+  problems:
+  - {topic: inequalities, subskill: one_step, count: 2, difficulty: medium}
+  - {topic: inequalities, subskill: two_step, count: 2, difficulty: medium}
+  - {topic: inequalities, subskill: multi_step_both_sides, count: 2, difficulty: medium}
+  - {topic: inequalities, subskill: fractional, count: 2, difficulty: hard}
+  - {topic: inequalities, subskill: compound_and, count: 2, difficulty: hard}
+- name: 'Part G: Coordinate Plane and Linear Relationships'
+  directions: Find the requested slope, line equation, or distance.
+  workspace: 1.7cm
+  columns: 2
+  problems:
+  - {topic: slope, subskill: identify_slope_intercept, count: 2, difficulty: medium}
+  - {topic: slope, subskill: slope_from_two_points, count: 2, difficulty: medium}
+  - {topic: slope, subskill: equation_from_two_points, count: 2, difficulty: medium}
+  - {topic: coordinate, subskill: distance, count: 2, difficulty: medium}
+  - {topic: slope, subskill: point_slope_to_equation, count: 2, difficulty: medium}
+- name: 'Part H: Functions and Patterns'
+  directions: Evaluate, analyze, or find the requested rule or term.
+  workspace: 1.5cm
+  columns: 2
+  problems:
+  - {topic: functions, subskill: evaluate_function, count: 4, difficulty: medium}
+  - {topic: functions, subskill: domain_range, count: 3, difficulty: medium}
+  - {topic: functions, subskill: literal_equation, count: 3, difficulty: medium}
+- name: 'Part I: Geometry Applications'
+  directions: Find the requested measure. Include units when given.
+  workspace: 1.5cm
+  columns: 1
+  problems:
+  - {topic: geometry, subskill: area_triangle, count: 2, difficulty: medium}
+  - {topic: geometry, subskill: area_circle, count: 2, difficulty: medium}
+  - {topic: geometry, subskill: pythagorean_hypotenuse, count: 2, difficulty: medium}
+  - {topic: geometry, subskill: pythagorean_leg, count: 2, difficulty: medium}
+  - {topic: geometry, subskill: volume_rect_prism, count: 2, difficulty: medium}
+- name: 'Part J: Word Problems and Modeling'
+  directions: Define a variable, write a model, solve, and interpret the answer.
+  workspace: 2.0cm
+  columns: 1
+  problems:
+  - {topic: word_problems, subskill: linear_model, count: 3, difficulty: medium}
+  - {topic: word_problems, subskill: rate_model, count: 3, difficulty: medium}
+  - {topic: word_problems, subskill: percent_model, count: 2, difficulty: medium}
+  - {topic: word_problems, subskill: comparison_model, count: 2, difficulty: medium}
