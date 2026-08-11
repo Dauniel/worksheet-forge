@@ -1,0 +1,114 @@
+title: 'Riwoo: Real Numbers, Operations, and Exponent Laws'
+header: 'Riwoo: Real Numbers, Operations, and Exponent Laws'
+sections:
+- name: 'Part A: Classifying Numbers'
+  directions: 'Classify each number using all that apply: rational, irrational, whole, integer.'
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: number_sense
+    subskill: classify
+    count: 8
+    difficulty: easy
+- name: 'Part B: Negative Number Operations'
+  directions: Evaluate each expression completely.
+  workspace: 1.1cm
+  columns: 2
+  problems:
+  - topic: negatives
+    subskill: add_sub_integers
+    count: 2
+    difficulty: easy
+  - topic: negatives
+    subskill: mul_div_integers
+    count: 2
+    difficulty: easy
+  - topic: negatives
+    subskill: mixed_operations
+    count: 2
+    difficulty: medium
+  - topic: negatives
+    subskill: order_of_operations
+    count: 2
+    difficulty: medium
+- name: 'Part C: Decimals'
+  directions: Evaluate. Write each answer as a decimal.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: decimals
+    subskill: add_sub_decimals
+    count: 1
+    difficulty: easy
+  - topic: decimals
+    subskill: multiply_decimals
+    count: 1
+    difficulty: easy
+  - topic: decimals
+    subskill: divide_decimals
+    count: 1
+    difficulty: medium
+- name: 'Part D: Decimals to Fractions'
+  directions: Write each decimal as a fraction in lowest terms.
+  workspace: 1.2cm
+  columns: 2
+  problems:
+  - topic: decimals
+    subskill: decimal_to_fraction
+    count: 1
+    difficulty: easy
+- name: 'Part E: Fractions'
+  directions: Evaluate. Write every answer in lowest terms.
+  workspace: 1.4cm
+  columns: 2
+  problems:
+  - topic: fractions
+    subskill: add_sub_fractions
+    count: 1
+    difficulty: easy
+  - topic: fractions
+    subskill: mul_div_fractions
+    count: 1
+    difficulty: easy
+  - topic: fractions
+    subskill: mixed_numbers
+    count: 1
+    difficulty: medium
+- name: 'Part F: Writing Fractions in Lowest Terms'
+  directions: Write each fraction in lowest terms.
+  workspace: 1.1cm
+  columns: 2
+  problems:
+  - topic: fractions
+    subskill: simplify_fractions
+    count: 1
+    difficulty: medium
+- name: 'Part G: Exponent Rules'
+  directions: Simplify. Write answers with positive exponents.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: exponents
+    subskill: product_rule
+    count: 2
+    difficulty: easy
+  - topic: exponents
+    subskill: quotient_rule
+    count: 2
+    difficulty: easy
+  - topic: exponents
+    subskill: power_rule
+    count: 1
+    difficulty: medium
+  - topic: exponents
+    subskill: negative_exponents
+    count: 1
+    difficulty: medium
+  - topic: exponents
+    subskill: zero_and_negative_powers
+    count: 1
+    difficulty: medium
+  - topic: exponents
+    subskill: combined_rules
+    count: 1
+    difficulty: hard
