@@ -87,7 +87,7 @@ python -m forge deliver specs/rachel.yaml --student Rachel_Math --seed 806
 ```
 
 Worksheets given to a student live in
-`tutor/worksheets/<Student>_<Subject>/<YYYY-MM-DD>/` (e.g.
+`tutor/students/<Student>_<Subject>/<YYYY-MM-DD>/` (e.g.
 `Rachel_Math/2026-08-06`, `Jean_English/2026-08-07`; a student taking two
 subjects gets two student folders). Each dated folder contains
 `<YYYY-MM-DD>_<Name>_spec.yaml`, `..._key.tex`, and a single
@@ -106,8 +106,10 @@ could not rebuild it. The seed is written into the delivered spec as a `seed:`
 key so the folder alone is enough to rebuild.
 
 `tests/test_delivery.py` holds this line: every filed PDF must have its spec and
-key beside it in a dated folder, and nothing may sit loose at the worksheets
-root or directly inside a student folder. Sheets filed
+key beside it in a dated folder, and no *dated* file may sit loose at the
+students root or directly inside a student folder. Undated reference material
+(a source sheet to model practice on, notes) does belong directly in a student
+folder — it has no dated folder to live in. Sheets filed
 before this command existed are grandfathered in `LEGACY_INCOMPLETE` — their
 seeds were never recorded, so a rebuilt key would not match the PDF the student
 received. Do not add to that list.

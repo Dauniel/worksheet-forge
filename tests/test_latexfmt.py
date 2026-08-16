@@ -6,7 +6,7 @@ from fractions import Fraction
 
 import pytest
 
-from forge.core.latexfmt import coeff, linear, mixed, num, poly, terms
+from forge.core.latexfmt import coeff, linear, mixed, num, poly, terms, var_pow
 
 
 @pytest.mark.parametrize(
@@ -98,3 +98,16 @@ def test_poly_display_mode_scales_the_constant_too():
 
 def test_non_display_constant_stays_inline():
     assert linear(Fraction(1, 2), Fraction(3, 4)) == r"\frac{1}{2}x + \frac{3}{4}"
+
+
+def test_var_pow_drops_exponent_one():
+    assert var_pow("x", 1) == "x"
+
+
+def test_var_pow_drops_variable_at_exponent_zero():
+    assert var_pow("x", 0) == ""
+
+
+def test_var_pow_renders_other_powers():
+    assert var_pow("x", 3) == "x^{3}"
+    assert var_pow("y", -2) == "y^{-2}"

@@ -1,0 +1,154 @@
+{
+  "worksheet": {
+    "title": "Algebra 1 - 1-1 Numeric Expressions Practice",
+    "source": "Kuta Software LLC",
+    "sections": [
+      {
+        "section_name": "Evaluate each expression without the use of a calculator",
+        "problems": [
+          {
+            "id": 1,
+            "expression": "(-8) - 5",
+            "type": "subtraction"
+          },
+          {
+            "id": 2,
+            "expression": "(-4) - (-2)",
+            "type": "subtraction_negatives"
+          },
+          {
+            "id": 3,
+            "expression": "(-5) + 7",
+            "type": "addition_negatives"
+          },
+          {
+            "id": 4,
+            "expression": "5 - (-4)",
+            "type": "subtraction_negatives"
+          },
+          {
+            "id": 5,
+            "expression": "(8)(-9)",
+            "type": "multiplication"
+          },
+          {
+            "id": 6,
+            "expression": "(-4)(-3)",
+            "type": "multiplication_negatives"
+          },
+          {
+            "id": 7,
+            "expression": "48 / (-6)",
+            "type": "division"
+          },
+          {
+            "id": 8,
+            "expression": "(-27) / (-3)",
+            "type": "division_negatives"
+          },
+          {
+            "id": 9,
+            "expression": "6 + 12 ÷ 6",
+            "type": "order_of_operations"
+          },
+          {
+            "id": 10,
+            "expression": "9 ÷ (1 + 2)",
+            "type": "order_of_operations_parentheses"
+          },
+          {
+            "id": 11,
+            "expression": "2 · 3²",
+            "type": "exponents"
+          },
+          {
+            "id": 12,
+            "expression": "(12 ÷ 4)²",
+            "type": "exponents_parentheses"
+          },
+          {
+            "id": 13,
+            "expression": "6 - 6 - (-6) · (-1)",
+            "type": "order_of_operations_mixed"
+          },
+          {
+            "id": 14,
+            "expression": "5(1 - 3) · (-6)",
+            "type": "order_of_operations_mixed"
+          },
+          {
+            "id": 15,
+            "expression": "(-3) - 2 + 1²",
+            "type": "order_of_operations_mixed"
+          },
+          {
+            "id": 16,
+            "expression": "(-2)[(−3) - 2 · 3]",
+            "type": "order_of_operations_nested"
+          },
+          {
+            "id": 17,
+            "expression": "6 / [5 · 2 - (2 + 2)]",
+            "type": "order_of_operations_nested"
+          },
+          {
+            "id": 18,
+            "expression": "(11 - 1) / [5 - (2 + 1)]",
+            "type": "order_of_operations_nested"
+          },
+          {
+            "id": 19,
+            "expression": "[11 - (6 - 3)] / 4",
+            "type": "order_of_operations_nested"
+          },
+          {
+            "id": 20,
+            "expression": "(3 - 1)² · 2",
+            "type": "exponents_order_of_operations"
+          }
+        ]
+      },
+      {
+        "section_name": "Evaluate each using the values given",
+        "problems": [
+          {
+            "id": 21,
+            "expression": "xy - x + 2",
+            "variables": {
+              "x": 2,
+              "y": 5
+            },
+            "type": "variable_substitution"
+          },
+          {
+            "id": 22,
+            "expression": "h² + j - j",
+            "variables": {
+              "h": 6,
+              "j": 5
+            },
+            "type": "variable_substitution"
+          },
+          {
+            "id": 23,
+            "expression": "a + 3 - (c - a)²",
+            "variables": {
+              "a": 4,
+              "c": 5
+            },
+            "type": "variable_substitution"
+          },
+          {
+            "id": 24,
+            "expression": "(j + h)(h - 2 + 2)",
+            "variables": {
+              "h": 5,
+              "j": 4
+            },
+            "type": "variable_substitution"
+          }
+        ]
+      }
+    ]
+  }
+}

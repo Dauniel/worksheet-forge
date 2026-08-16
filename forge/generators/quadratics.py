@@ -14,7 +14,7 @@ from math import gcd
 
 import sympy as sp
 
-from ..core.latexfmt import poly
+from ..core.latexfmt import coeff, linear, num, poly, terms
 from ..core.problem import Problem
 from ..core.registry import register
 from ..core.sampling import nonzero_int, pick
@@ -90,9 +90,29 @@ def solve_by_factoring(rng: random.Random, difficulty: str) -> Problem:
 
 @register("quadratics", "quadratic_formula")
 def quadratic_formula(rng: random.Random, difficulty: str) -> Problem:
-    """``a*x^2 + b*x + c = 0`` with a non-perfect-square discriminant."""
+    """``a*x^2 + b*x + c = 0`` with a non-perfect-square discriminant.
+
+    At the "hard" tier, roughly 30% of draws instead pick a *negative*
+    discriminant -- the case where the formula reports "no real solutions"
+    rather than a pair of irrational roots.
+    """
     _, hi = RANGES[difficulty]
     a = pick(rng, (1, 2, 3))
+    if difficulty == "hard" and rng.random() < 0.3:
+        while True:
+            b = nonzero_int(rng, -hi, hi)
+            c = nonzero_int(rng, -hi, hi)
+            if b * b - 4 * a * c < 0:
+                break
+        return Problem(
+            question_latex=f"${poly([a, b, c])} = 0$",
+            answer_latex=r"$\text{no real solutions}$",
+            answer_expr="no real solutions",
+            topic="quadratics",
+            subskill="quadratic_formula",
+            difficulty=difficulty,
+            verify={"kind": "solve_quadratic_no_real"},
+        )
     while True:
         b = nonzero_int(rng, -hi, hi)
         c = nonzero_int(rng, -hi, hi)
@@ -121,4 +141,91 @@ def find_vertex(rng: random.Random, difficulty: str) -> Problem:
         subskill="find_vertex",
         difficulty=difficulty,
         verify={"kind": "quadratic_vertex"},
+    )
+
+
+@register("quadratics", "vertex_and_direction")
+def vertex_and_direction(rng: random.Random, difficulty: str) -> Problem:
+    """Like ``find_vertex``, but also states whether the parabola opens up
+    (minimum) or down (maximum)."""
+    _, hi = RANGES[difficulty]
+    a = pick(rng, (-3, -2, -1, 1, 2, 3))
+    h = nonzero_int(rng, -hi, hi)
+    k = nonzero_int(rng, -hi, hi)
+    b = -2 * a * h
+    c = a * h * h + k
+    direction = "maximum" if a < 0 else "minimum"
+    return Problem(
+        question_latex=f"$y = {poly([a, b, c])}$",
+        answer_latex=rf"$({h}, {k})$, {direction}",
+        answer_expr=(sp.Integer(h), sp.Integer(k), direction),
+        topic="quadratics",
+        subskill="vertex_and_direction",
+        difficulty=difficulty,
+        verify={"kind": "vertex_and_direction"},
+    )
+
+
+VFCS_A = {"easy": (-3, -2, 2, 3), "medium": (-4, -3, -2, 2, 3, 4),
+          "hard": (-6, -5, -4, -3, 2, 3, 4, 5, 6)}
+VFCS_HK = {"easy": (1, 6), "medium": (2, 9), "hard": (2, 12)}
+
+
+@register("quadratics", "vertex_form_complete_square")
+def vertex_form_complete_square(rng: random.Random, difficulty: str) -> Problem:
+    """Standard form -> vertex form, built backwards from ``a``, ``h``, ``k``
+    so the expansion is always exact: ``f(x) = -4x^2+24x-10 -> -4(x-3)^2+26``.
+    """
+    a = pick(rng, VFCS_A[difficulty])
+    lo, hi = VFCS_HK[difficulty]
+    h = nonzero_int(rng, -hi, hi)
+    k = nonzero_int(rng, -hi, hi)
+    b = -2 * a * h
+    c = a * h * h + k
+
+    inner = linear(1, -h)
+    vertex = terms(f"{num(a)}({inner})^{{2}}", num(k))
+    return Problem(
+        question_latex=f"$f(x) = {poly([a, b, c])}$",
+        answer_latex=f"$f(x) = {vertex}$",
+        answer_expr=(sp.Integer(a), sp.Integer(h), sp.Integer(k)),
+        topic="quadratics",
+        subskill="vertex_form_complete_square",
+        difficulty=difficulty,
+        verify={"kind": "vertex_form_complete_square"},
+    )
+
+
+CTS_A = {"easy": (2, 3), "medium": (2, 3, 4, 5), "hard": (2, 3, 4, 5, 6)}
+CTS_M = {"easy": (1, 5), "medium": (1, 8), "hard": (1, 10)}
+
+
+@register("quadratics", "complete_the_square_blank")
+def complete_the_square_blank(rng: random.Random, difficulty: str) -> Problem:
+    """``ax^2+bx+c=0 -> a(x^2+(b/a)x+___) = -c+___``; state the pair of
+    blanks. ``a`` and the linear coefficient are chosen so ``b/a`` is an even
+    integer, which keeps the first blank an integer.
+    """
+    a = pick(rng, CTS_A[difficulty])
+    mlo, mhi = CTS_M[difficulty]
+    m = nonzero_int(rng, mlo, mhi) * rng.choice((-1, 1))
+    b = 2 * a * m
+    c = nonzero_int(rng, -10 * a, 10 * a)
+    k = m * m
+    right_blank = a * k
+
+    inner_x = terms(r"x^{2}", coeff(2 * m, "x"))
+    question = (
+        rf"{poly([a, b, c])} = 0 \quad\Rightarrow\quad "
+        rf"{a}\left({inner_x} + \_\_\_\_\right) = {num(-c)}+\_\_\_\_"
+    )
+    answer = rf"{k} \text{{ and }} {right_blank}"
+    return Problem(
+        question_latex=f"${question}$",
+        answer_latex=f"${answer}$",
+        answer_expr=(sp.Integer(k), sp.Integer(right_blank)),
+        topic="quadratics",
+        subskill="complete_the_square_blank",
+        difficulty=difficulty,
+        verify={"kind": "complete_square_blanks"},
     )

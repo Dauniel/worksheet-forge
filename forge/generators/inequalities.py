@@ -206,8 +206,8 @@ def compound_and(rng: random.Random, difficulty: str) -> Problem:
     right_closed = not strict_r if m > 0 else not strict_l
     solution = sp.Interval(lo_b, hi_b, left_open=not left_closed, right_open=not right_closed)
 
-    bound_l = f"{'\\le' if left_closed else '<'}"
-    bound_r = f"{'\\le' if right_closed else '<'}"
+    bound_l = "\\le" if left_closed else "<"
+    bound_r = "\\le" if right_closed else "<"
     answer = f"${lo_b} {bound_l} x {bound_r} {hi_b}$"
     return Problem(
         question_latex=question,

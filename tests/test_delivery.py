@@ -21,9 +21,16 @@ from forge.cli import WORKSHEETS, main
 # delivery that needs an exemption is a delivery that went out wrong.
 LEGACY_INCOMPLETE = {
     ("Jean_English", "2026-07-30_Jean"),
+    # These two surfaced only when the filing tests were pointed at
+    # tutor/students/ (they had been scanning tutor/worksheets/, a tree nothing
+    # was ever delivered into). Same irreparable shape as the rest: Jean's has
+    # no spec at all, and both Riwoo specs record no seed, so a rebuilt key
+    # would not match the PDF the student received.
+    ("Jean_English", "2026-08-07_Jean"),
+    ("Riwoo_Math", "2026-08-10_Riwoo"),
     ("Jimmy_Math", "2026-07-30_Jimmy"),
     ("Jimmy_Math", "2026-07-31_Jimmy"),
-    ("Mabel", "2026-07-30_Mabel"),
+    ("Mabel_Math", "2026-07-30_Mabel"),
     ("Rachel_Math", "2026-07-30_Rachel"),
 }
 
@@ -35,7 +42,7 @@ _DELIVERY = re.compile(r"^\d{4}-\d{2}-\d{2}_[A-Za-z]+$")
 
 
 def _delivered_sets():
-    """Every (student, dated folder, stem) filed under tutor/worksheets/."""
+    """Every (student, dated folder, stem) filed under tutor/students/."""
     for student in sorted(p for p in WORKSHEETS.iterdir() if p.is_dir()):
         for pdf in sorted(student.glob("*/*.pdf")):
             if _DELIVERY.match(pdf.stem):
@@ -78,15 +85,21 @@ def test_no_stray_files_at_the_worksheets_root():
     """Worksheets live in a student folder, never loose at the root."""
     stray = [p.name for p in WORKSHEETS.iterdir()
              if p.is_file() and not p.name.startswith(".")]
-    assert not stray, f"files loose in tutor/worksheets/: {stray}"
+    assert not stray, f"files loose in tutor/students/: {stray}"
 
 
 def test_no_dated_files_loose_in_student_folders():
-    """Every dated artifact belongs in the matching YYYY-MM-DD folder."""
+    """Every dated artifact belongs in the matching YYYY-MM-DD folder.
+
+    Only *dated* files are stray. A student folder is also where undated
+    reference material lives (source sheets to model practice on, notes), and
+    that has no dated folder to belong to.
+    """
     stray = []
     for student in sorted(p for p in WORKSHEETS.iterdir() if p.is_dir()):
         stray.extend(str(p.relative_to(WORKSHEETS)) for p in student.iterdir()
-                     if p.is_file() and not p.name.startswith("."))
+                     if p.is_file() and not p.name.startswith(".")
+                     and re.match(r"^\d{4}-\d{2}-\d{2}", p.name))
     assert not stray, "dated files loose in student folders: " + ", ".join(stray)
 
 

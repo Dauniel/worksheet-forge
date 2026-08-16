@@ -67,6 +67,7 @@ import sympy as sp
 
 from ..core.problem import Problem
 from ..core.registry import register
+from ..core.sampling import pick
 
 # Bases square to at most 12^2 = 144 and cube to at most 6^3 = 216 -- the
 # square side capped tighter than "low triple digits", cube side left as-is.
@@ -225,3 +226,168 @@ def simplify_cube_radical(rng: random.Random, difficulty: str) -> Problem:
     # ourselves and keep `value` as the thing verification re-derives.
     answer = rf"{a} \sqrt[3]{{{b}}}"
     return _mk(question, value, "simplify_cube_radical", difficulty, answer_latex=answer)
+
+
+# --------------------------------------------------------------------------
+# simplify_radical_variables: multi-variable radicals (square/cube/4th root,
+# including quotient radicands), assuming all variables are positive.
+#
+# Built entirely backwards -- the outside factor and the leftover radicand
+# are chosen first, then multiplied out into the printed radicand -- so the
+# "remainder" exponent under the root is always capped at 1 (never allowed to
+# reach n-1) purely to keep it renderable as a bare variable with no braces:
+# the printed answer's radical content must stay brace-free for the shared
+# LaTeX->sympy parser's ``\sqrt{...}`` regex (which does not handle nested
+# braces) to read it back for the generic printed-key check.
+# --------------------------------------------------------------------------
+
+_RV_VARS = ("x", "y", "z")
+_RV_SQFREE = (1, 2, 3, 5, 6, 7, 10, 11, 13)
+_RV_CUBEFREE = (1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12)
+_RV_FOURFREE = (1, 2, 3, 5, 6, 7, 9, 10, 11, 13)
+_RV_A = {2: (2, 3, 4), 3: (2, 3), 4: (2, 3)}
+_RV_REM = {2: _RV_SQFREE, 3: _RV_CUBEFREE, 4: _RV_FOURFREE}
+_RV_Q = {"easy": (1, 2), "medium": (1, 3), "hard": (1, 4)}
+
+
+def _rv_to_plain(expr):
+    """Swap positive-assumption symbols back to plain ones (matching what
+    the shared LaTeX->sympy parser produces), so the generic printed-key
+    check compares like with like instead of two symbols that merely share
+    a name."""
+    subs = {s: sp.Symbol(s.name) for s in expr.free_symbols}
+    return expr.subs(subs)
+
+
+def _rv_mono(coefficient: int, exps: dict, order) -> str:
+    """A coefficient times variable powers, e.g. ``4x^{2}y``.
+
+    Two adjacent *bare* (exponent-1) variables would otherwise glue into one
+    multi-letter token (``xy``) that the shared LaTeX->sympy parser reads back
+    as a single symbol, not ``x*y`` -- implicit multiplication only splits on
+    a digit/brace boundary, never letter-letter. A thin space between two
+    letter-starting parts sidesteps that without changing how it prints.
+    """
+    parts = [] if coefficient == 1 else [str(coefficient)]
+    for v in order:
+        e = exps.get(v, 0)
+        if e == 0:
+            continue
+        parts.append(v if e == 1 else f"{v}^{{{e}}}")
+    if not parts:
+        return str(coefficient)
+    out = parts[0]
+    for part in parts[1:]:
+        if out[-1].isalpha() and part[0].isalpha():
+            out += r"\,"
+        out += part
+    return out
+
+
+def _rv_build(rng: random.Random, n: int, nvars: int, difficulty: str,
+              force_perfect: bool = False, force_odd: bool = False):
+    """Backwards construction: choose the answer's outside/inside parts
+    first. Returns ``(radicand_str, answer_expr, answer_str)``."""
+    order = list(_RV_VARS[:nvars])
+    qlo, qhi = _RV_Q[difficulty]
+    A = pick(rng, _RV_A[n])
+    r = 1 if force_perfect else pick(rng, _RV_REM[n])
+    q, s = {}, {}
+    for i, v in enumerate(order):
+        q[v] = rng.randint(qlo, qhi)
+        if force_perfect:
+            s[v] = 0
+        elif force_odd and i == 0:
+            s[v] = 1
+        else:
+            s[v] = rng.randint(0, 1)
+    full_exps = {v: q[v] * n + s[v] for v in order}
+    full_coef = A**n * r
+    radicand = _rv_mono(full_coef, full_exps, order)
+
+    symbols = {v: sp.Symbol(v, positive=True) for v in order}
+    remainder_expr = sp.Integer(r)
+    outside_expr = sp.Integer(A)
+    for v in order:
+        remainder_expr *= symbols[v] ** s[v]
+        outside_expr *= symbols[v] ** q[v]
+    answer_expr = _rv_to_plain(outside_expr * sp.root(remainder_expr, n))
+
+    outside_str = _rv_mono(A, q, order)
+    if r == 1 and all(s[v] == 0 for v in order):
+        answer_str = outside_str
+    else:
+        inner = _rv_mono(r, s, order)
+        rad = rf"\sqrt{{{inner}}}" if n == 2 else rf"\sqrt[{n}]{{{inner}}}"
+        answer_str = outside_str + (r"\," if outside_str[-1].isalpha() else "") + rad
+    return radicand, answer_expr, answer_str
+
+
+def _rv_build_quotient(rng: random.Random, n: int, nvars: int, difficulty: str):
+    order = list(_RV_VARS[:nvars])
+    qlo, qhi = _RV_Q[difficulty]
+    A = pick(rng, _RV_A[n])
+    r = pick(rng, tuple(v for v in _RV_REM[n] if v != 1))
+    q = {v: rng.randint(qlo, qhi) for v in order}
+    s = {v: rng.randint(0, 1) for v in order}
+    full_exps = {v: q[v] * n + s[v] for v in order}
+    full_coef = A**n * r
+    D = pick(rng, (2, 3, 4) if n == 2 else (2, 3))
+    numer = _rv_mono(full_coef * D, full_exps, order)
+    denom = str(D)
+    radicand = rf"\dfrac{{{numer}}}{{{denom}}}"
+
+    symbols = {v: sp.Symbol(v, positive=True) for v in order}
+    remainder_expr = sp.Integer(r)
+    outside_expr = sp.Integer(A)
+    for v in order:
+        remainder_expr *= symbols[v] ** s[v]
+        outside_expr *= symbols[v] ** q[v]
+    answer_expr = _rv_to_plain(outside_expr * sp.root(remainder_expr, n))
+    outside_str = _rv_mono(A, q, order)
+    inner = _rv_mono(r, s, order)
+    rad = rf"\sqrt{{{inner}}}" if n == 2 else rf"\sqrt[{n}]{{{inner}}}"
+    answer_str = outside_str + (r"\," if outside_str[-1].isalpha() else "") + rad
+    return radicand, answer_expr, answer_str
+
+
+@register("roots", "simplify_radical_variables")
+def simplify_radical_variables(rng: random.Random, difficulty: str) -> Problem:
+    shape = rng.randrange(5)
+    if shape == 0:  # perfect square with variables, e.g. sqrt(16x^8)
+        n = 2
+        radicand, answer_expr, answer_str = _rv_build(
+            rng, n, pick(rng, (1, 2)), difficulty, force_perfect=True
+        )
+    elif shape == 1:  # non-perfect square, several vars, mixed even/odd exps
+        n = 2
+        radicand, answer_expr, answer_str = _rv_build(
+            rng, n, pick(rng, (2, 3)), difficulty, force_odd=True
+        )
+    elif shape == 2:  # cube root
+        n = 3
+        radicand, answer_expr, answer_str = _rv_build(rng, n, pick(rng, (2, 3)), difficulty)
+    elif shape == 3:  # fourth root
+        n = 4
+        radicand, answer_expr, answer_str = _rv_build(rng, n, 3, difficulty)
+    else:  # quotient radicand
+        n = pick(rng, (2, 3))
+        radicand, answer_expr, answer_str = _rv_build_quotient(
+            rng, n, pick(rng, (1, 2)), difficulty
+        )
+
+    question = rf"\sqrt{{{radicand}}}" if n == 2 else rf"\sqrt[{n}]{{{radicand}}}"
+    return Problem(
+        question_latex=f"${question}$",
+        answer_latex=f"${answer_str}$",
+        answer_expr=answer_expr,
+        topic="roots",
+        subskill="simplify_radical_variables",
+        difficulty=difficulty,
+        # The generic printed-key re-check compares with plain (non-positive)
+        # symbols, which can't prove e.g. sqrt(x*y) == sqrt(x)*sqrt(y) even
+        # though it holds for positive reals. _v_simplify_radical_vars above
+        # already re-derives and compares this correctly with positive
+        # symbols, so the generic check is redundant here -- opt out of it.
+        verify={"kind": "simplify_radical_vars", "answer_check": None},
+    )

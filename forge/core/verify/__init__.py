@@ -29,11 +29,19 @@ from .parsing import (
     _mixed_to_sympy,
 )
 from .algebra import (
+    _v_classify_polynomial,
+    _v_standard_form,
+    _v_simplify_radical_vars,
+    _v_vertex_and_direction,
+    _v_vertex_form_complete_square,
+    _v_complete_square_blanks,
+    _v_solve_quadratic_no_real,
     _v_composition,
     _v_compound_or,
     _v_domain_range,
     _v_evaluate_function,
     _v_literal_equation,
+    _v_substitution,
     _v_trig_amplitude,
     _v_trig_period,
     _v_trig_phase_shift,
@@ -143,6 +151,7 @@ STRATEGIES = {
     "composition": _v_composition,
     "transformation": _v_transformation,
     "evaluate_function": _v_evaluate_function,
+    "substitution": _v_substitution,
     "domain_range": _v_domain_range,
     "literal_equation": _v_literal_equation,
     "trig_amplitude": _v_trig_amplitude,
@@ -235,6 +244,13 @@ STRATEGIES = {
     "right_triangle_find_angle": _v_right_triangle_find_angle,
     "degree_radian_conversion": _v_degree_radian_conversion,
     "exact_trig_value": _v_exact_trig_value,
+    "classify_polynomial": _v_classify_polynomial,
+    "standard_form": _v_standard_form,
+    "simplify_radical_vars": _v_simplify_radical_vars,
+    "vertex_and_direction": _v_vertex_and_direction,
+    "vertex_form_complete_square": _v_vertex_form_complete_square,
+    "complete_square_blanks": _v_complete_square_blanks,
+    "solve_quadratic_no_real": _v_solve_quadratic_no_real,
 }
 
 def _check_verify_fragments(p: Problem) -> None:

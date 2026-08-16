@@ -100,7 +100,7 @@ def _quick_cmd(args: argparse.Namespace) -> int:
     return 0
 
 
-WORKSHEETS = ROOT / "tutor" / "worksheets"
+WORKSHEETS = ROOT / "tutor" / "students"
 
 
 def _prepare_delivery(args: argparse.Namespace, student: str):
@@ -157,7 +157,7 @@ def _deliver_cmd(args: argparse.Namespace) -> int:
     Three conventions used to live only in CLAUDE.md, and all three were broken
     the first time an agent followed the prose: build with ``--no-history`` so
     the seed alone reproduces the sheet, write the trio (spec, key .tex, PDF)
-    into ``tutor/worksheets/<Student>/<YYYY-MM-DD>/``, and leave nothing behind
+    into ``tutor/students/<Student>/<YYYY-MM-DD>/``, and leave nothing behind
     in ``out/``.
     This command is the executable version of that paragraph.
     """
@@ -234,7 +234,7 @@ def main(argv=None) -> int:
     q.add_argument("--name", default="quick", help="basename for the generated spec")
     q.add_argument("--save", default="", help="write the generated spec here")
     q.add_argument("--deliver-to", default="", metavar="STUDENT",
-                   help=("file the result under tutor/worksheets/STUDENT/DATE/ as a "
+                   help=("file the result under tutor/students/STUDENT/DATE/ as a "
                          "delivered worksheet, exactly as `forge deliver` would"))
     q.add_argument("--date", default="", help="YYYY-MM-DD for --deliver-to (default: today)")
     q.add_argument("--force", action="store_true",
@@ -244,7 +244,7 @@ def main(argv=None) -> int:
 
     d = sub.add_parser(
         "deliver",
-        help="build a worksheet and file it under tutor/worksheets/<Student>/<Date>/",
+        help="build a worksheet and file it under tutor/students/<Student>/<Date>/",
         description=(
             "Examples:\n"
             "  forge deliver specs/rachel.yaml --student Rachel_Math\n"
@@ -254,7 +254,7 @@ def main(argv=None) -> int:
     )
     d.add_argument("spec", help="path to a YAML spec")
     d.add_argument("--student", required=True,
-                   help="folder name under tutor/worksheets/, e.g. Rachel_Math")
+                   help="folder name under tutor/students/, e.g. Rachel_Math")
     d.add_argument("--date", default="", help="YYYY-MM-DD (default: today)")
     d.add_argument("--force", action="store_true",
                    help="overwrite an already-delivered sheet for this date")

@@ -160,6 +160,77 @@ def transformation_equation(rng: random.Random, difficulty: str) -> Problem:
     )
 
 
+SUB_VARS = ("a", "b", "c", "h", "j", "k", "m", "n", "p", "q", "x", "y")
+SUB_VAL_SPAN = {"easy": 6, "medium": 8, "hard": 9}
+SUB_COEF = {"easy": (1, 3), "medium": (1, 4), "hard": (1, 5)}
+SUB_CONST = {"easy": 6, "medium": 9, "hard": 12}
+
+
+@register("functions", "substitution")
+def substitution(rng: random.Random, difficulty: str) -> Problem:
+    """Multi-variable substitution, Kuta-style: evaluate an expression in two
+    named variables at given integer values.
+
+    The expression *structure* is sampled, not fixed: easy stays linear in
+    each variable, medium adds a squared variable, and hard adds a squared
+    parenthesized binomial or a product of two binomials -- the point where
+    students have to expand before substituting (or substitute first and
+    avoid expanding at all). Every term is built from real sympy symbols, so
+    the printed key is safe by construction; no f-string coefficient joins.
+    """
+    v1_name, v2_name = sorted(rng.sample(SUB_VARS, 2))
+    s1, s2 = sp.Symbol(v1_name), sp.Symbol(v2_name)
+
+    span = SUB_VAL_SPAN[difficulty]
+    if difficulty == "easy":
+        val1, val2 = rng.randint(1, span), rng.randint(1, span)
+    else:
+        val1, val2 = nonzero_int(rng, -span, span), nonzero_int(rng, -span, span)
+
+    lo, hi = SUB_COEF[difficulty]
+    const_span = SUB_CONST[difficulty]
+
+    def rand_coeff():
+        return rng.choice((-1, 1)) * rng.randint(lo, hi)
+
+    terms = [rand_coeff() * s1]  # guarantees v1 appears
+
+    if difficulty == "easy":
+        terms.append(rand_coeff() * s2)  # guarantees v2 appears
+    elif difficulty == "medium":
+        v = pick(rng, (s1, s2))
+        other = s2 if v is s1 else s1
+        terms.append(rand_coeff() * v ** 2)
+        terms.append(rand_coeff() * other)  # guarantees the other var appears
+    else:  # hard
+        sign = rng.choice((1, -1))
+        if rng.random() < 0.5:
+            coeff = rng.randint(1, 2)
+            terms.append(coeff * (s1 + sign * s2) ** 2)
+        else:
+            const = nonzero_int(rng, -3, 3)
+            terms.append((s1 + s2) * (s1 - s2 + const))
+        if rng.random() < 0.5:
+            terms.append(rand_coeff() * s1 * s2)
+
+    if difficulty != "easy" and rng.random() < 0.5:
+        terms.append(rand_coeff() * pick(rng, (s1, s2)))
+
+    if difficulty == "easy" or rng.random() < 0.7:
+        terms.append(sp.Integer(nonzero_int(rng, -const_span, const_span)))
+
+    display_expr = sp.Add(*terms, evaluate=False)
+    answer = sum(int(t.subs({s1: val1, s2: val2})) for t in terms)
+    answer_expr = sp.Integer(answer)
+
+    question = (
+        f"{sp.latex(display_expr)}, \\quad "
+        f"{v1_name} = {val1},\\ {v2_name} = {val2}"
+    )
+    return _mk(question, sp.latex(answer_expr), answer_expr, "substitution",
+               difficulty, kind="substitution")
+
+
 EVAL_INPUT = {"easy": 6, "medium": 10, "hard": 15}
 
 

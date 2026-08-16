@@ -20,3 +20,6 @@ venv/
 
 # macOS
 .DS_Store
+
+# pytest capture files -- local run output, not shared history.
+pytest_out*.txt

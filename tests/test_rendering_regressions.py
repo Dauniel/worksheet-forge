@@ -53,14 +53,23 @@ def test_no_coefficient_smells(pattern, label):
 
 
 def test_zero_slope_renders_without_x():
-    """A zero slope must give 'y = 5', never 'y = 0x + 5'."""
-    gen = all_generators()[("slope", "identify_slope_intercept")]
+    """A zero slope must give 'y = 5', never 'y = 0x + 5'.
+
+    ``identify_slope_intercept`` no longer samples a zero slope: Part 10's
+    directions now ask for the x-intercept too, which is undefined for a
+    horizontal line, so that generator is built backwards from a nonzero
+    slope and a clean x-intercept (see ``_line_with_x_intercept`` in
+    ``forge/generators/slope.py``). ``equation_from_two_points`` still draws
+    ``m`` unrestricted via ``_line``'s default ``allow_zero_slope=True``, so
+    the "0x" rendering bug is swept there instead.
+    """
+    gen = all_generators()[("slope", "equation_from_two_points")]
     found_zero_slope = False
     for seed in range(2000):
         p = gen(random.Random(seed), "medium")
         if p.answer_expr[0] == 0:
             found_zero_slope = True
-            assert "x" not in p.question_latex, p.question_latex
+            assert "x" not in p.answer_latex, p.answer_latex
     assert found_zero_slope, "never sampled a zero slope; widen the sweep"
 
 

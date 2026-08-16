@@ -36,6 +36,15 @@ def _v_evaluate(p: Problem) -> None:
             f"key says {p.answer_expr}"
         )
 
+_FACTORING_SUBSKILLS = {
+    "factor_trinomial",
+    "factor_by_grouping",
+    "difference_of_squares",
+    "factor_trinomial_lead",
+    "factor_difference_of_squares_lead",
+}
+
+
 def _v_simplify(p: Problem) -> None:
     """The answer must be algebraically identical to the printed expression."""
     got = latex_to_sympy(p.verify.get("expr", p.question_latex))
@@ -43,6 +52,28 @@ def _v_simplify(p: Problem) -> None:
         raise VerificationError(
             f"{p.topic}/{p.subskill}: {p.question_latex} != {p.answer_expr}"
         )
+    if p.subskill in _FACTORING_SUBSKILLS:
+        _check_fully_factored(p)
+
+
+def _check_fully_factored(p: Problem) -> None:
+    """The printed key must be sympy's fully-factored form, not just a
+    product that multiplies back to the question -- each individual factor
+    must be primitive (content 1), so a common factor like ``2`` can't be
+    left sitting inside two linear factors, e.g. ``4x^2-36 -> (2x-6)(2x+6)``
+    (each factor has content 2) or ``9x^2-81 -> (3x-9)(3x+9)`` (content 3).
+    """
+    x = sp.Symbol("x")
+    printed = latex_to_sympy(p.answer_latex)
+    for factor in sp.Mul.make_args(sp.sympify(printed)):
+        if factor.free_symbols:
+            poly_ = sp.Poly(factor, x)
+            content = poly_.content()
+            if content != 1:
+                raise VerificationError(
+                    f"{p.topic}/{p.subskill}: printed key {p.answer_latex!r} is not "
+                    f"fully factored -- factor {factor} has content {content}"
+                )
 
 def _v_solve(p: Problem) -> None:
     """Re-solve the printed relation and require exactly the keyed solution."""
@@ -178,13 +209,36 @@ def _v_slope_intercept(p: Problem) -> None:
     if poly.degree() > 1:
         raise VerificationError(f"{p.topic}/{p.subskill}: {p.question_latex} is not linear")
     m, b = rhs.coeff(x, 1), rhs.coeff(x, 0)
-    got_m, got_b = p.answer_expr
+    got_m, got_b, got_x0 = p.answer_expr
     if not (_equal(m, got_m) and _equal(b, got_b)):
         raise VerificationError(
             f"{p.topic}/{p.subskill}: {p.question_latex} has m={m}, b={b}; "
             f"key says m={got_m}, b={got_b}"
         )
+    x0 = -b / m
+    if not _equal(x0, got_x0):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} has x-intercept {x0}; "
+            f"key says {got_x0}"
+        )
     _v_check_printed_m_b(p, m, b)
+    _v_check_printed_x_intercept(p, x0)
+
+def _v_check_printed_x_intercept(p: Problem, x0) -> None:
+    """The PRINTED ``x\\text{-intercept} = (val, 0)`` key must match the
+    re-derived x-intercept -- ``answer_expr`` alone doesn't catch a rendering
+    bug in the printed text."""
+    m = re.search(r"x\\text\{-intercept\}\s*=\s*\((-?[\d./]+),\s*0\)", p.answer_latex)
+    if not m:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: cannot read x-intercept from {p.answer_latex!r}"
+        )
+    printed_x0 = latex_to_sympy(m.group(1))
+    if not _equal(printed_x0, x0):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed key {p.answer_latex!r} states x-intercept "
+            f"{printed_x0}; re-derived is {x0}"
+        )
 
 def _v_check_printed_m_b(p: Problem, m, b) -> None:
     """The PRINTED ``m = ..., \\quad b = ...`` key must match the re-derived
@@ -243,13 +297,20 @@ def _v_slope_intercept_standard(p: Problem) -> None:
     if poly.degree() > 1:
         raise VerificationError(f"{p.topic}/{p.subskill}: {p.question_latex} is not linear in x")
     m, b = sol.coeff(x, 1), sol.coeff(x, 0)
-    got_m, got_b = p.answer_expr
+    got_m, got_b, got_x0 = p.answer_expr
     if not (_equal(m, got_m) and _equal(b, got_b)):
         raise VerificationError(
             f"{p.topic}/{p.subskill}: {p.question_latex} has m={m}, b={b}; "
             f"key says m={got_m}, b={got_b}"
         )
+    x0 = -b / m
+    if not _equal(x0, got_x0):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} has x-intercept {x0}; "
+            f"key says {got_x0}"
+        )
     _v_check_printed_m_b(p, m, b)
+    _v_check_printed_x_intercept(p, x0)
 
 def _v_point_slope(p: Problem) -> None:
     """The keyed line must have the printed slope and hit the printed point."""
@@ -928,6 +989,34 @@ def _v_evaluate_function(p: Problem) -> None:
         )
 
 
+def _v_substitution(p: Problem) -> None:
+    """Re-read the expression and variable values off the question and
+    substitute independently, rather than trusting the generator's own sum.
+    """
+    text = p.question_latex.strip().strip("$")
+    if r"\quad" not in text:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: expected an expression and values "
+            f"separated by \\quad"
+        )
+    expr_part, assign_part = text.split(r"\quad", 1)
+    expr_part = expr_part.strip().rstrip(",").strip()
+    assignments = re.findall(r"([a-zA-Z])\s*=\s*(-?\d+)", assign_part)
+    if len(assignments) != 2:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: expected two variable assignments, "
+            f"found {len(assignments)}"
+        )
+    subs_map = {sp.Symbol(k): sp.Integer(v) for k, v in assignments}
+    expr = latex_to_sympy(expr_part)
+    expected = expr.subs(subs_map)
+    if not _equal(expected, p.answer_expr):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: substitution gives {expected}, "
+            f"key says {p.answer_expr}"
+        )
+
+
 _PAIR = re.compile(r"\((-?\d+),\s*(-?\d+)\)")
 
 
@@ -1001,4 +1090,204 @@ def _v_literal_equation(p: Problem) -> None:
         raise VerificationError(
             f"{p.topic}/{p.subskill}: {target} = {printed} is not a solution "
             f"(sympy gives {solutions})"
+        )
+
+
+def _v_classify_polynomial(p: Problem) -> None:
+    """Re-count the printed expression's terms; the key must name that count."""
+    text = p.question_latex.strip().strip("$")
+    x = sp.Symbol("x")
+    expr = latex_to_sympy(text)
+    if not expr.free_symbols:
+        expected = "Constant"
+    else:
+        nterms = len(sp.expand(expr).as_ordered_terms())
+        expected = {1: "Monomial", 2: "Binomial", 3: "Trinomial"}.get(nterms, "Polynomial")
+    got = p.answer_latex.strip().strip("$")
+    m = re.match(r"\\text\{(.+)\}$", got)
+    if m:
+        got = m.group(1)
+    if got != expected:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} should classify as "
+            f"{expected!r}, key says {got!r}"
+        )
+
+
+def _v_standard_form(p: Problem) -> None:
+    """Algebraic identity against the question, plus a structural check that
+    the printed key's powers of x are strictly descending."""
+    got = latex_to_sympy(p.question_latex)
+    answer = latex_to_sympy(p.answer_latex)
+    if not _equal(sp.expand(got), sp.expand(answer)):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} != {p.answer_latex}"
+        )
+    ans_text = p.answer_latex.strip().strip("$").replace(" ", "")
+    powers = []
+    for term in re.findall(r"[+-]?[^+-]+", ans_text):
+        m = re.search(r"x\^\{(-?\d+)\}", term)
+        if m:
+            powers.append(int(m.group(1)))
+        elif "x" in term:
+            powers.append(1)
+        else:
+            powers.append(0)
+    if powers != sorted(powers, reverse=True):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: key {p.answer_latex!r} is not in "
+            f"standard (descending-power) form: read powers {powers}"
+        )
+
+
+def _v_simplify_radical_vars(p: Problem) -> None:
+    """Independently recompute the printed radical (bare or a quotient
+    radicand) with positive-valued variables and compare to the key."""
+    text = p.question_latex.strip().strip("$")
+    m = re.match(r"\\sqrt(?:\[(\d+)\])?\{", text)
+    if not m:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read radical from {p.question_latex!r}")
+    n = int(m.group(1)) if m.group(1) else 2
+    body, end = _match_group(text, m.end() - 1)
+    if end != len(text):
+        raise VerificationError(f"{p.topic}/{p.subskill}: trailing content in {p.question_latex!r}")
+    if r"\dfrac" in body or r"\frac" in body:
+        fracs = _extract_fracs(body)
+        if len(fracs) != 1:
+            raise VerificationError(f"{p.topic}/{p.subskill}: expected 1 fraction in {body!r}")
+        numer_t, denom_t = fracs[0]
+        radicand = latex_to_sympy(numer_t) / latex_to_sympy(denom_t)
+    else:
+        radicand = latex_to_sympy(body)
+    subs = {s: sp.Symbol(s.name, positive=True) for s in radicand.free_symbols}
+    radicand = radicand.subs(subs)
+    got = sp.root(radicand, n)
+
+    # Parse the PRINTED key too (not just answer_expr), with the same
+    # positive-variable assumption -- comparing in plain-symbol space can't
+    # prove e.g. sqrt(x*y) == sqrt(x)*sqrt(y) even though it holds for
+    # positive reals, so both sides have to be compared positive-for-positive.
+    ans_text = p.answer_latex.strip().strip("$")
+    printed = latex_to_sympy(ans_text)
+    printed = printed.subs({s: sp.Symbol(s.name, positive=True) for s in printed.free_symbols})
+    if not _equal(got, printed):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} simplifies to {got}, "
+            f"printed key {p.answer_latex!r} reads as {printed}"
+        )
+    got_plain = got.subs({s: sp.Symbol(s.name) for s in got.free_symbols})
+    if not _equal(got_plain, p.answer_expr):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: {p.question_latex} simplifies to {got}, "
+            f"but the generator's own answer_expr says {p.answer_expr}"
+        )
+
+
+def _v_vertex_and_direction(p: Problem) -> None:
+    """Recompute the vertex and opening direction from the printed equation."""
+    text = p.question_latex.strip().strip("$")
+    x = sp.Symbol("x")
+    rhs = latex_to_sympy(text.split("=", 1)[1])
+    poly_ = sp.Poly(rhs, x)
+    if poly_.degree() != 2:
+        raise VerificationError(f"{p.topic}/{p.subskill}: {p.question_latex} is not quadratic")
+    a, b, _c = poly_.all_coeffs()
+    h = -b / (2 * a)
+    k = rhs.subs(x, h)
+    expected_dir = "maximum" if a < 0 else "minimum"
+    pts = _POINT.findall(p.answer_latex)
+    if len(pts) != 1:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read vertex from {p.answer_latex!r}")
+    ph, pk = sp.Integer(pts[0][0]), sp.Integer(pts[0][1])
+    if not (_equal(ph, h) and _equal(pk, k)):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: vertex should be ({h}, {k}), key says ({ph}, {pk})"
+        )
+    if expected_dir not in p.answer_latex:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: parabola should state {expected_dir!r}, "
+            f"key is {p.answer_latex!r}"
+        )
+
+
+def _v_vertex_form_complete_square(p: Problem) -> None:
+    """The printed vertex form must expand to the same polynomial as the
+    printed standard form, and evaluate to the re-derived vertex value k at
+    the re-derived vertex x = h."""
+    text = p.question_latex.strip().strip("$")
+    if "=" not in text:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no '=' in {p.question_latex!r}")
+    x = sp.Symbol("x")
+    rhs = latex_to_sympy(text.split("=", 1)[1])
+    poly_ = sp.Poly(rhs, x)
+    if poly_.degree() != 2:
+        raise VerificationError(f"{p.topic}/{p.subskill}: {p.question_latex} is not quadratic")
+    a, b, c = poly_.all_coeffs()
+    h = -sp.Rational(b, 2 * a)
+    k = c - sp.Rational(b, 2) ** 2 / a
+
+    ans_text = p.answer_latex.strip().strip("$")
+    if "=" not in ans_text:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no '=' in key {p.answer_latex!r}")
+    printed = latex_to_sympy(ans_text.split("=", 1)[1])
+    if not _equal(sp.expand(printed), sp.expand(rhs)):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed vertex form does not expand to "
+            f"{rhs}"
+        )
+    if not _equal(printed.subs(x, h), k):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed vertex form does not equal the "
+            f"re-derived vertex value {k} at x = {h}"
+        )
+
+
+def _v_complete_square_blanks(p: Problem) -> None:
+    """Re-derive both blanks from the printed ``ax^2+bx+c=0`` and require the
+    printed pair to match."""
+    text = p.question_latex.strip().strip("$")
+    eq_part = text.split(r"\quad\Rightarrow\quad")[0].strip()
+    if "=" not in eq_part:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no '=' in {eq_part!r}")
+    lhs_t, rhs_t = eq_part.split("=", 1)
+    x = sp.Symbol("x")
+    lhs = latex_to_sympy(lhs_t) - latex_to_sympy(rhs_t)
+    poly_ = sp.Poly(lhs, x)
+    if poly_.degree() != 2:
+        raise VerificationError(f"{p.topic}/{p.subskill}: {eq_part} is not quadratic")
+    a, b, _c = poly_.all_coeffs()
+    k = sp.Rational(b, 2 * a) ** 2
+    right = a * k
+
+    ans_text = p.answer_latex.strip().strip("$")
+    nums = re.findall(r"-?\d+", ans_text)
+    if len(nums) != 2:
+        raise VerificationError(f"{p.topic}/{p.subskill}: cannot read two blanks from {ans_text!r}")
+    pk, pr = sp.Integer(nums[0]), sp.Integer(nums[1])
+    if not (_equal(pk, k) and _equal(pr, right)):
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: blanks should be ({k}, {right}), key says ({pk}, {pr})"
+        )
+
+
+def _v_solve_quadratic_no_real(p: Problem) -> None:
+    """Re-derive the discriminant from the printed equation; require it to be
+    negative and the key to state "no real solutions"."""
+    text = p.question_latex.strip().strip("$")
+    if "=" not in text:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no '=' in {p.question_latex!r}")
+    lhs_t, rhs_t = text.split("=", 1)
+    x = sp.Symbol("x")
+    poly_ = sp.Poly(latex_to_sympy(lhs_t) - latex_to_sympy(rhs_t), x)
+    if poly_.degree() != 2:
+        raise VerificationError(f"{p.topic}/{p.subskill}: {p.question_latex} is not quadratic")
+    a, b, c = poly_.all_coeffs()
+    disc = b * b - 4 * a * c
+    if disc >= 0:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: discriminant {disc} >= 0, real solutions exist"
+        )
+    if "no real solution" not in p.answer_latex.lower():
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: key does not state 'no real solutions': {p.answer_latex!r}"
         )

@@ -1,0 +1,103 @@
+title: Jean Math Practice - Honors Algebra 2 Trig Prerequisite
+header: Jean - Algebra 2 Prerequisite Practice
+sections:
+- name: 'Part 1: Classify each polynomial'
+  directions: Classify each as a monomial, binomial, trinomial, polynomial, or constant.
+  workspace: 0.4cm
+  columns: 2
+  problems:
+  - {topic: polynomials, subskill: classify_polynomial, count: 4, difficulty: medium}
+- name: 'Part 2: Standard form'
+  directions: Rewrite each polynomial in standard form.
+  workspace: 1.3cm
+  columns: 1
+  problems:
+  - {topic: polynomials, subskill: standard_form, count: 3, difficulty: medium}
+- name: 'Part 3: Add polynomials'
+  directions: Add the following polynomials by combining like terms.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - {topic: polynomials, subskill: add_polynomials, count: 3, difficulty: medium}
+- name: 'Part 4: Subtract polynomials'
+  directions: Subtract the following polynomials by combining like terms.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - {topic: polynomials, subskill: subtract_polynomials, count: 3, difficulty: medium}
+- name: 'Part 5: Find the products'
+  directions: Find the following products. Write your answers in standard form.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - {topic: polynomials, subskill: multiply_monomial, count: 2, difficulty: easy}
+  - {topic: polynomials, subskill: multiply_binomials, count: 2, difficulty: medium}
+  - {topic: polynomials, subskill: multiply_poly, count: 2, difficulty: medium}
+- name: 'Part 6: Divide'
+  directions: Divide. Remember to divide every term of the polynomial.
+  workspace: 1.6cm
+  columns: 2
+  problems:
+  - {topic: polynomials, subskill: divide_by_monomial, count: 3, difficulty: medium}
+- name: 'Part 7: Factor'
+  directions: Factor the following polynomials completely.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - {topic: polynomials, subskill: factor_trinomial, count: 5, difficulty: medium}
+  - {topic: polynomials, subskill: factor_trinomial_lead, count: 6, difficulty: hard}
+  - {topic: polynomials, subskill: difference_of_squares, count: 2, difficulty: medium}
+  - {topic: polynomials, subskill: factor_difference_of_squares_lead, count: 1, difficulty: medium}
+- name: 'Part 8: Exponent properties'
+  directions: Simplify the following using exponent properties. Write your answers with positive exponents.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - {topic: exponents, subskill: multivariable_simplify, count: 5, difficulty: medium}
+  - {topic: exponents, subskill: multivariable_simplify, count: 4, difficulty: hard}
+- name: 'Part 9: Radical properties'
+  directions: Simplify the following using radical properties. Assume all variables are positive.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - {topic: roots, subskill: simplify_radical_variables, count: 4, difficulty: medium}
+  - {topic: roots, subskill: simplify_radical_variables, count: 4, difficulty: hard}
+- name: 'Part 10: Lines'
+  directions: State the slope $m$ and the $x$- and $y$-intercepts of each line.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - {topic: slope, subskill: identify_slope_intercept, count: 2, difficulty: medium}
+  - {topic: slope, subskill: identify_from_standard, count: 1, difficulty: medium}
+- name: 'Part 11: Parabolas'
+  directions: State the vertex of each parabola, then state whether it has a maximum or a minimum.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - {topic: quadratics, subskill: vertex_and_direction, count: 3, difficulty: medium}
+- name: 'Part 12: Solve by factoring'
+  directions: Solve each equation by factoring.
+  workspace: 2.4cm
+  columns: 2
+  problems:
+  - {topic: quadratics, subskill: solve_by_factoring, count: 3, difficulty: medium}
+  - {topic: quadratics, subskill: solve_by_factoring, count: 3, difficulty: hard}
+- name: 'Part 13: Solve using the quadratic formula'
+  directions: Solve each equation using the quadratic formula.
+  workspace: 2.8cm
+  columns: 2
+  problems:
+  - {topic: quadratics, subskill: quadratic_formula, count: 3, difficulty: medium}
+  - {topic: quadratics, subskill: quadratic_formula, count: 2, difficulty: hard}
+- name: 'Part 14: Completing the square'
+  directions: State the values that belong in the blanks to complete the square.
+  workspace: 2.2cm
+  columns: 1
+  problems:
+  - {topic: quadratics, subskill: complete_the_square_blank, count: 2, difficulty: medium}
+- name: 'Part 14: Vertex form by completing the square'
+  directions: Change the standard form to vertex form by completing the square.
+  workspace: 2.6cm
+  columns: 1
+  problems:
+  - {topic: quadratics, subskill: vertex_form_complete_square, count: 3, difficulty: medium}

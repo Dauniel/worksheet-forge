@@ -1,0 +1,93 @@
+{
+  "worksheet": {
+    "title": "Algebra 1 - 1-1 Numeric Expressions Practice (Set 2)",
+    "source": "Practice set modeled on Kuta Software LLC 1-1",
+    "sections": [
+      {
+        "section_name": "Evaluate each expression without the use of a calculator",
+        "problems": [
+          { "id": 1, "expression": "(-7) - 4", "type": "subtraction" },
+          { "id": 2, "expression": "(-9) - 6", "type": "subtraction" },
+          { "id": 3, "expression": "3 - 11", "type": "subtraction" },
+          { "id": 4, "expression": "(-6) - (-2)", "type": "subtraction_negatives" },
+          { "id": 5, "expression": "(-3) - (-8)", "type": "subtraction_negatives" },
+          { "id": 6, "expression": "7 - (-5)", "type": "subtraction_negatives" },
+          { "id": 7, "expression": "2 - (-9)", "type": "subtraction_negatives" },
+          { "id": 8, "expression": "(-6) + 9", "type": "addition_negatives" },
+          { "id": 9, "expression": "(-11) + 4", "type": "addition_negatives" },
+          { "id": 10, "expression": "(-7) + 7", "type": "addition_negatives" },
+          { "id": 11, "expression": "(7)(-6)", "type": "multiplication" },
+          { "id": 12, "expression": "(-9)(4)", "type": "multiplication" },
+          { "id": 13, "expression": "(5)(-8)", "type": "multiplication" },
+          { "id": 14, "expression": "(-5)(-7)", "type": "multiplication_negatives" },
+          { "id": 15, "expression": "(-8)(-3)", "type": "multiplication_negatives" },
+          { "id": 16, "expression": "(-6)(-6)", "type": "multiplication_negatives" },
+          { "id": 17, "expression": "54 / (-9)", "type": "division" },
+          { "id": 18, "expression": "(-42) / 7", "type": "division" },
+          { "id": 19, "expression": "36 / (-4)", "type": "division" },
+          { "id": 20, "expression": "(-32) / (-8)", "type": "division_negatives" },
+          { "id": 21, "expression": "(-45) / (-9)", "type": "division_negatives" },
+          { "id": 22, "expression": "(-56) / (-7)", "type": "division_negatives" },
+          { "id": 23, "expression": "8 + 15 ÷ 5", "type": "order_of_operations" },
+          { "id": 24, "expression": "20 - 6 · 3", "type": "order_of_operations" },
+          { "id": 25, "expression": "4 + 18 ÷ 3", "type": "order_of_operations" },
+          { "id": 26, "expression": "30 ÷ 5 - 2", "type": "order_of_operations" },
+          { "id": 27, "expression": "24 ÷ (3 + 5)", "type": "order_of_operations_parentheses" },
+          { "id": 28, "expression": "(7 + 5) ÷ 4", "type": "order_of_operations_parentheses" },
+          { "id": 29, "expression": "36 ÷ (10 - 4)", "type": "order_of_operations_parentheses" },
+          { "id": 30, "expression": "3 · 4²", "type": "exponents" },
+          { "id": 31, "expression": "5 · 2³", "type": "exponents" },
+          { "id": 32, "expression": "2² · 6", "type": "exponents" },
+          { "id": 33, "expression": "(18 ÷ 3)²", "type": "exponents_parentheses" },
+          { "id": 34, "expression": "(20 ÷ 5)²", "type": "exponents_parentheses" },
+          { "id": 35, "expression": "(2 + 3)²", "type": "exponents_parentheses" },
+          { "id": 36, "expression": "8 - 3 - (-4) · (-2)", "type": "order_of_operations_mixed" },
+          { "id": 37, "expression": "4(2 - 6) · (-3)", "type": "order_of_operations_mixed" },
+          { "id": 38, "expression": "(-5) - 3 + 2²", "type": "order_of_operations_mixed" },
+          { "id": 39, "expression": "7 + (-2)(5) - 1", "type": "order_of_operations_mixed" },
+          { "id": 40, "expression": "(-3)[(-4) - 3 · 2]", "type": "order_of_operations_nested" },
+          { "id": 41, "expression": "12 / [4 · 3 - (5 + 3)]", "type": "order_of_operations_nested" },
+          { "id": 42, "expression": "(15 - 3) / [7 - (2 + 2)]", "type": "order_of_operations_nested" },
+          { "id": 43, "expression": "[14 - (8 - 2)] / 4", "type": "order_of_operations_nested" },
+          { "id": 44, "expression": "(5 - 2)² · 3", "type": "exponents_order_of_operations" },
+          { "id": 45, "expression": "(6 - 4)³ · 5", "type": "exponents_order_of_operations" }
+        ]
+      },
+      {
+        "section_name": "Evaluate each using the values given",
+        "problems": [
+          {
+            "id": 46,
+            "expression": "ab - b + 3",
+            "variables": { "a": 3, "b": 4 },
+            "type": "variable_substitution"
+          },
+          {
+            "id": 47,
+            "expression": "m² + n - n",
+            "variables": { "m": 7, "n": 2 },
+            "type": "variable_substitution"
+          },
+          {
+            "id": 48,
+            "expression": "p + 5 - (q - p)²",
+            "variables": { "p": 6, "q": 8 },
+            "type": "variable_substitution"
+          },
+          {
+            "id": 49,
+            "expression": "(x + y)(y - 3 + 3)",
+            "variables": { "x": 3, "y": 6 },
+            "type": "variable_substitution"
+          },
+          {
+            "id": 50,
+            "expression": "2c - d²",
+            "variables": { "c": 9, "d": 4 },
+            "type": "variable_substitution"
+          }
+        ]
+      }
+    ]
+  }
+}

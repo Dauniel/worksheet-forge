@@ -1,0 +1,38 @@
+title: Mabel Math Worksheet - Numeric Expressions
+header: Mabel Math - Numeric Expressions
+sections:
+- name: 'Part A: Adding and Subtracting Integers'
+  directions: Evaluate each expression without the use of a calculator.
+  workspace: 1.0cm
+  columns: 2
+  problems:
+  - {topic: negatives, subskill: add_sub_integers, count: 5, difficulty: easy}
+  - {topic: negatives, subskill: add_sub_integers, count: 5, difficulty: medium}
+- name: 'Part B: Multiplying and Dividing Integers'
+  directions: Evaluate each expression without the use of a calculator.
+  workspace: 1.0cm
+  columns: 2
+  problems:
+  - {topic: negatives, subskill: mul_div_integers, count: 6, difficulty: easy}
+  - {topic: negatives, subskill: mul_div_integers, count: 6, difficulty: medium}
+- name: 'Part C: Order of Operations'
+  directions: Evaluate each expression completely. Show each major step.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - {topic: negatives, subskill: order_of_operations, count: 8, difficulty: medium}
+  - {topic: negatives, subskill: order_of_operations, count: 7, difficulty: hard}
+- name: 'Part D: Mixed Operations'
+  directions: Evaluate each expression completely. Show each major step.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - {topic: negatives, subskill: mixed_operations, count: 4, difficulty: medium}
+  - {topic: negatives, subskill: mixed_operations, count: 4, difficulty: hard}
+- name: 'Part E: Evaluating with Given Values'
+  directions: Evaluate each expression using the values given.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - {topic: functions, subskill: substitution, count: 2, difficulty: medium}
+  - {topic: functions, subskill: substitution, count: 3, difficulty: hard}

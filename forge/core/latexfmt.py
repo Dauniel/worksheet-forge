@@ -86,6 +86,20 @@ def linear(m, b, var: str = "x", display: bool = False) -> str:
     return _join([coeff(m, var, display), const(b) if b != 0 else ""])
 
 
+def var_pow(var: str, power) -> str:
+    """A single ``var^power`` factor, for juxtaposed (multiplied) monomial
+    factors -- not +/- joined terms. ``power == 1`` drops the exponent
+    (``var_pow("x", 1) == "x"``); ``power == 0`` drops the variable entirely
+    (``var_pow("x", 0) == ""``), so callers can concatenate factors directly
+    without special-casing either edge.
+    """
+    if power == 0:
+        return ""
+    if power == 1:
+        return var
+    return f"{var}^{{{power}}}"
+
+
 def poly(coeffs, var: str = "x", display: bool = False) -> str:
     """Render a polynomial from a highest-degree-first coefficient sequence."""
     coeffs = list(coeffs)

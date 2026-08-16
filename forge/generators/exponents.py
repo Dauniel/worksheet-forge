@@ -6,6 +6,18 @@ import random
 
 import sympy as sp
 
+from ..core.latexfmt import var_pow
+
+
+def _mono(*parts: str) -> str:
+    """Join ``var_pow`` factors of a multiplied monomial with a separating
+    space so two adjacent bare variables (e.g. exponent 1 next to exponent
+    1) never merge into one token -- ``latex_to_sympy``'s tokenizer reads
+    ``xy`` as a single two-letter symbol, not ``x * y``, when nothing
+    (a digit, a brace, an operator) separates them. Empty factors (exponent
+    0) are dropped entirely.
+    """
+    return " ".join(p for p in parts if p)
 from ..core.problem import Problem
 from ..core.registry import register
 from ..core.sampling import nonzero_int, pick
@@ -157,6 +169,122 @@ def combined_rules(rng: random.Random, difficulty: str) -> Problem:
         value = sp.Rational(ca, cb) ** n * X ** ((a - c) * n)
 
     return _mk(question, value, "combined_rules", difficulty)
+
+
+def _ve(var: str, e: int) -> str:
+    """A single ``var^e`` factor, omitted entirely when ``e == 0``."""
+    if e == 0:
+        return ""
+    if e == 1:
+        return var
+    return f"{var}^{{{e}}}"
+
+
+def _mvcoef(c: int) -> str:
+    """A monomial's numeric coefficient, dropped entirely when it is 1.
+
+    A quotient's denominator coefficient is drawn from the divisors of the
+    numerator's so the two divide evenly, and 1 is always among them -- which
+    printed a literal ``1x^{2}`` before this existed. Same class of bug as
+    ``latexfmt.coeff``'s ``1y`` case, but for juxtaposed monomial factors
+    rather than +/- joined terms.
+    """
+    return "" if c == 1 else str(c)
+
+
+def _zero_pow(var: str) -> str:
+    """A literal ``var^{0}`` factor, kept visible in the question.
+
+    ``latexfmt.var_pow`` drops an exponent of 0 entirely, which is right when
+    building an answer but wrong here: recognizing that anything to the zero
+    power is 1 is the whole point of the exercise, so the factor has to be on
+    the page for the student to cancel. The value passed to sympy still
+    multiplies by ``var**0``, so the key shows it already simplified away.
+    """
+    return f"{var}^{{0}}"
+
+
+MV_COEF = {"easy": (2, 6), "medium": (2, 9), "hard": (2, 12)}
+MV_EXP = {"easy": (1, 5), "medium": (2, 7), "hard": (2, 9)}
+
+
+@register("exponents", "multivariable_simplify")
+def multivariable_simplify(rng: random.Random, difficulty: str) -> Problem:
+    """Multi-variable simplification with zero/negative exponents; answers
+    always have positive exponents only, printed as a fraction when needed.
+
+    Five shapes rotate across draws: a plain product, a product where some
+    exponents are negative, a power-of-product times an outer monomial, a
+    whole parenthesized expression raised to a negative power, and a quotient
+    that includes a zero-exponent factor.
+    """
+    clo, chi = MV_COEF[difficulty]
+    elo, ehi = MV_EXP[difficulty]
+    A, B, C = sp.symbols("a b c")
+    style = rng.randrange(5)
+
+    if style == 0:
+        X, Y = sp.symbols("x y")
+        ca, cb = rng.randint(clo, chi), rng.randint(clo, chi)
+        a1, b1 = rng.randint(elo, ehi), rng.randint(elo, ehi)
+        a2, b2 = rng.randint(elo, ehi), rng.randint(elo, ehi)
+        question = (
+            rf"{ca}{_mono(var_pow('x', a1), var_pow('y', b1))} \cdot "
+            rf"{cb}{_mono(var_pow('x', a2), var_pow('y', b2))}"
+        )
+        value = ca * cb * X ** (a1 + a2) * Y ** (b1 + b2)
+    elif style == 1:
+        ca, cb = rng.randint(clo, chi), rng.randint(clo, chi)
+        e1 = rng.randint(1, ehi)
+        e2 = -rng.randint(1, ehi)
+        e3 = -rng.randint(1, ehi)
+        e4 = rng.randint(1, ehi)
+        question = (
+            rf"{ca}{_mono(var_pow('a', e1), var_pow('b', e2))} \cdot "
+            rf"{cb}{_mono(var_pow('a', e3), var_pow('b', e4))}"
+        )
+        value = ca * cb * A ** (e1 + e3) * B ** (e2 + e4)
+    elif style == 2:
+        X, Y, Z = sp.symbols("x y z")
+        ca = rng.randint(clo, chi)
+        a = rng.randint(1, min(ehi, 5))
+        cb = rng.randint(clo, chi)
+        a2, b2, c2 = (rng.randint(1, min(ehi, 5)) for _ in range(3))
+        n = rng.randint(2, 3)
+        question = (
+            rf"{ca}{var_pow('x', a)}"
+            rf"({cb}{_mono(var_pow('x', a2), var_pow('y', b2), var_pow('z', c2))})^{{{n}}}"
+        )
+        value = ca * (cb**n) * X ** (a + a2 * n) * Y ** (b2 * n) * Z ** (c2 * n)
+    elif style == 3:
+        X, Y, Z = sp.symbols("x y z")
+        c = pick(rng, (2, 3))
+        ex = -rng.randint(1, min(ehi, 4))
+        ey = rng.randint(1, min(ehi, 4))
+        ez = -rng.randint(1, min(ehi, 4))
+        n = pick(rng, (-1, -2))
+        question = (
+            rf"({c}{_mono(var_pow('x', ex), var_pow('y', ey), var_pow('z', ez))})^{{{n}}}"
+        )
+        value = sp.Integer(c) ** n * X ** (ex * n) * Y ** (ey * n) * Z ** (ez * n)
+    else:
+        X, Y, Z = sp.symbols("x y z")
+        ca = rng.randint(clo, chi)
+        divisors = [i for i in range(1, ca + 1) if ca % i == 0]
+        cb = pick(rng, divisors)
+        a1, b1 = rng.randint(elo, ehi), -rng.randint(1, ehi)
+        a2 = rng.randint(1, a1 - 1) if a1 > 1 else 0
+        b2 = -rng.randint(1, ehi)
+        c1 = rng.randint(1, ehi)
+        question = (
+            rf"\dfrac{{{_mvcoef(ca)}"
+            rf"{_mono(var_pow('x', a1), var_pow('y', b1), var_pow('z', c1))}}}"
+            rf"{{{_mvcoef(cb)}"
+            rf"{_mono(var_pow('x', a2), var_pow('y', b2), _zero_pow('z'))}}}"
+        )
+        value = sp.Rational(ca, cb) * X ** (a1 - a2) * Y ** (b1 - b2) * Z**c1
+
+    return _mk(question, value, "multivariable_simplify", difficulty)
 
 
 @register("exponents", "zero_and_negative_powers")

@@ -75,14 +75,35 @@ def equation_from_two_points(rng: random.Random, difficulty: str) -> Problem:
     )
 
 
+def _line_with_x_intercept(rng: random.Random, difficulty: str):
+    """Choose ``m`` and the x-intercept ``x0`` first, then derive ``b``.
+
+    Built backwards so the x-intercept comes out exact: ``x0`` is drawn as a
+    multiple of ``m``'s denominator, so ``b = -m*x0`` is always an integer
+    and ``-b/m`` reproduces ``x0`` exactly.
+    """
+    lo, hi = RANGES[difficulty]
+    d = pick(rng, SLOPE_DENOMS[difficulty])
+    n = nonzero_int(rng, lo, hi)
+    m = Fraction(n, d)
+    k = nonzero_int(rng, 1, max(2, hi // max(d, 1))) * rng.choice((-1, 1))
+    x0 = d * k
+    b = -n * k
+    return m, b, x0
+
+
 @register("slope", "identify_slope_intercept")
 def identify_slope_intercept(rng: random.Random, difficulty: str) -> Problem:
-    m, b = _line(rng, difficulty)
+    m, b, x0 = _line_with_x_intercept(rng, difficulty)
     ms = sp.Rational(m.numerator, m.denominator)
     return Problem(
         question_latex=f"$y = {linear(m, b, display=True)}$",
-        answer_latex=rf"$m = {sp.latex(ms)}$, \quad $b = {b}$",
-        answer_expr=(ms, sp.Integer(b)),
+        answer_latex=(
+            rf"$m = {sp.latex(ms)}$, \quad $b = {b}$, \quad "
+            rf"$x\text{{-intercept}} = ({x0}, 0)$, \quad "
+            rf"$y\text{{-intercept}} = (0, {b})$"
+        ),
+        answer_expr=(ms, sp.Integer(b), sp.Integer(x0)),
         topic="slope",
         subskill="identify_slope_intercept",
         difficulty=difficulty,
@@ -108,7 +129,7 @@ def slope_and_equation(rng: random.Random, difficulty: str) -> Problem:
 
 @register("slope", "identify_from_standard")
 def identify_from_standard(rng: random.Random, difficulty: str) -> Problem:
-    m, b = _line(rng, difficulty, allow_zero_slope=False)
+    m, b, x0 = _line_with_x_intercept(rng, difficulty)
     ms = sp.Rational(m.numerator, m.denominator)
     d = m.denominator
     if d == 1:
@@ -135,8 +156,12 @@ def identify_from_standard(rng: random.Random, difficulty: str) -> Problem:
 
     return Problem(
         question_latex=f"${lhs} = {rhs}$",
-        answer_latex=rf"$m = {sp.latex(ms)}$, \quad $b = {sp.latex(sp.Integer(b))}$",
-        answer_expr=(ms, sp.Integer(b)),
+        answer_latex=(
+            rf"$m = {sp.latex(ms)}$, \quad $b = {sp.latex(sp.Integer(b))}$, \quad "
+            rf"$x\text{{-intercept}} = ({x0}, 0)$, \quad "
+            rf"$y\text{{-intercept}} = (0, {sp.latex(sp.Integer(b))})$"
+        ),
+        answer_expr=(ms, sp.Integer(b), sp.Integer(x0)),
         topic="slope",
         subskill="identify_from_standard",
         difficulty=difficulty,
