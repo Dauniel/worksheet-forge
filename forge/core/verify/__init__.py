@@ -15,6 +15,7 @@ import from here exactly as they did before the split.
 from __future__ import annotations
 
 import re
+import tokenize
 from typing import List
 
 import sympy as sp
@@ -37,6 +38,7 @@ from .algebra import (
     _v_complete_square_blanks,
     _v_solve_quadratic_no_real,
     _v_composition,
+    _v_property,
     _v_compound_or,
     _v_domain_range,
     _v_evaluate_function,
@@ -149,6 +151,7 @@ STRATEGIES = {
     "solve": _v_solve,
     "inverse_function": _v_inverse_function,
     "composition": _v_composition,
+    "property": _v_property,
     "transformation": _v_transformation,
     "evaluate_function": _v_evaluate_function,
     "substitution": _v_substitution,
@@ -292,7 +295,7 @@ def _check_answer_latex(p: Problem) -> None:
     s = re.sub(r"^[A-Za-z]\s*=\s*", "", s)
     try:
         printed = _mixed_to_sympy(s)
-    except (VerificationError, sp.SympifyError, TypeError, SyntaxError):
+    except (VerificationError, sp.SympifyError, TypeError, SyntaxError, tokenize.TokenError):
         return  # non-numeric keys (e.g. inequalities) are checked by their strategy
     target = p.answer_expr
     # Sets, relations, multi-part keys, and plain-string answers (e.g. "Option

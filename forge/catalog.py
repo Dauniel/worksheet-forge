@@ -48,6 +48,18 @@ def _s(subskill: str, difficulty: str, group: str = "", directions: str = "",
 
 
 CATALOG: Dict[str, dict] = {
+    "properties": {
+        "name": "Properties of Addition and Multiplication",
+        "directions": "Select the property that is displayed in the given equation.",
+        "workspace": "0.3cm",
+        "progression": [
+            _s("commutative", "easy", columns=1),
+            _s("associative", "easy", columns=1),
+            _s("identity", "medium", columns=1),
+            _s("inverse", "medium", columns=1),
+            _s("mixed", "hard", columns=1),
+        ],
+    },
     "negatives": {
         "name": "Negative Number Operations",
         "directions": "Evaluate each expression completely.",
@@ -110,6 +122,10 @@ CATALOG: Dict[str, dict] = {
         "progression": [
             _s("one_step", "easy", columns=2),
             _s("two_step", "easy", columns=2),
+            # Same "solve for x" directions as the rest -- collecting like
+            # terms first is still just solving the equation, so this stays
+            # in the shared section rather than getting its own group.
+            _s("combine_then_solve", "medium", columns=2),
             _s("with_distribution", "medium", columns=2),
             _s("multi_step_both_sides", "medium", columns=2),
             # Fractional coefficients / variable-over-a-denominator forms and

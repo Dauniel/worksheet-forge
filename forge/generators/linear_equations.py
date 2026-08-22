@@ -201,6 +201,44 @@ def proportion(rng: random.Random, difficulty: str) -> Problem:
     return _mk(lhs, rhs, x_sol, "proportion", difficulty)
 
 
+@register("linear_equations", "combine_then_solve")
+def combine_then_solve(rng: random.Random, difficulty: str) -> Problem:
+    """Equations that need like terms collected on one side before solving.
+
+    Two families, both built backwards from ``x_sol``:
+
+    - two variable terms, no constant: ``m1*x + m2*x = c``
+    - one variable term, two constants: ``m*x + b1 + b2 = c``
+
+    The side carrying the un-combined expression is randomized, matching the
+    reference worksheet's mix of ``-6p + 3p = 12`` and ``-16 = p + 7p``.
+    """
+    lo, hi = RANGES[difficulty]
+    x_sol = _solution(rng, difficulty)
+
+    if rng.random() < 0.5:
+        m1 = nonzero_int(rng, -hi, hi)
+        m2 = nonzero_int(rng, -hi, hi)
+        while m1 + m2 == 0:  # vanishing variable -> degenerate equation
+            m2 = nonzero_int(rng, -hi, hi)
+        expr = terms(coeff(m1, "x"), coeff(m2, "x"))
+        c = (m1 + m2) * x_sol
+    else:
+        m = nonzero_int(rng, -hi, hi)
+        b1 = nonzero_int(rng, -hi, hi)
+        b2 = nonzero_int(rng, -hi, hi)
+        expr = terms(coeff(m, "x"), num(b1), num(b2))
+        c = m * x_sol + b1 + b2
+
+    const_side = dnum(c)
+    if rng.random() < 0.5:
+        lhs, rhs = expr, const_side
+    else:
+        lhs, rhs = const_side, expr
+
+    return _mk(lhs, rhs, x_sol, "combine_then_solve", difficulty)
+
+
 @register("linear_equations", "with_distribution")
 def with_distribution(rng: random.Random, difficulty: str) -> Problem:
     lo, hi = RANGES[difficulty]

@@ -1291,3 +1291,205 @@ def _v_solve_quadratic_no_real(p: Problem) -> None:
         raise VerificationError(
             f"{p.topic}/{p.subskill}: key does not state 'no real solutions': {p.answer_latex!r}"
         )
+
+
+# --------------------------------------------------------------------------
+# properties: commutative / associative / identity / inverse
+# --------------------------------------------------------------------------
+
+_PROP_NAME = {"commutative": "Commutative", "associative": "Associative",
+              "identity": "Identity", "inverse": "Inverse"}
+_OP_NAME = {"+": "Addition", "*": "Multiplication"}
+_OP_KEY = {"+": "add", "*": "mul"}
+
+
+def _property_tokenize(s: str) -> list:
+    s = s.replace(" ", "")
+    s = re.sub(r"\\d?frac\{1\}\{([^{}]+)\}", r"INV(\1)", s)
+    tokens = re.findall(r"INV|\\cdot|\d+|[A-Za-z]|[()+\-]", s)
+    return ["*" if t == r"\cdot" else t for t in tokens]
+
+
+def _property_parse_primary(tokens: list, i: int):
+    if i >= len(tokens):
+        raise VerificationError("properties: unexpected end of expression")
+    t = tokens[i]
+    if t == "-":
+        node, i = _property_parse_primary(tokens, i + 1)
+        return ("neg", node), i
+    if t == "(":
+        node, i = _property_parse_expr(tokens, i + 1)
+        if i >= len(tokens) or tokens[i] != ")":
+            raise VerificationError("properties: unbalanced parentheses")
+        return node, i + 1
+    if t == "INV":
+        if i + 1 >= len(tokens) or tokens[i + 1] != "(":
+            raise VerificationError("properties: malformed 1/x term")
+        node, i = _property_parse_expr(tokens, i + 2)
+        if i >= len(tokens) or tokens[i] != ")":
+            raise VerificationError("properties: unbalanced parentheses in 1/x term")
+        return ("inv", node), i + 1
+    if t.isdigit():
+        return ("num", int(t)), i + 1
+    if len(t) == 1 and t.isalpha():
+        return ("var", t), i + 1
+    raise VerificationError(f"properties: unrecognized token {t!r}")
+
+
+def _property_parse_expr(tokens: list, i: int):
+    node, i = _property_parse_primary(tokens, i)
+    while i < len(tokens) and tokens[i] in ("+", "*"):
+        op = tokens[i]
+        rhs, i = _property_parse_primary(tokens, i + 1)
+        node = ("bin", op, node, rhs)
+    return node, i
+
+
+def _property_parse_side(text: str):
+    tokens = _property_tokenize(text)
+    if not tokens:
+        raise VerificationError("properties: empty side of equation")
+    node, i = _property_parse_expr(tokens, 0)
+    if i != len(tokens):
+        raise VerificationError(f"properties: trailing tokens in {text!r}")
+    return node
+
+
+def _property_is_atom(n) -> bool:
+    return n[0] in ("num", "var", "neg", "inv")
+
+
+def _property_check_identity(lhs, rhs, op) -> bool:
+    identity_elem = ("num", 0) if op == "+" else ("num", 1)
+    for atom_side, other in ((lhs, rhs), (rhs, lhs)):
+        if _property_is_atom(atom_side) and other[0] == "bin" and other[1] == op:
+            l, r = other[2], other[3]
+            if (l == atom_side and r == identity_elem) or (r == atom_side and l == identity_elem):
+                return True
+    return False
+
+
+def _property_check_inverse(lhs, rhs, op) -> bool:
+    identity_elem = ("num", 0) if op == "+" else ("num", 1)
+    inv_op = "neg" if op == "+" else "inv"
+    for atom_side, other in ((lhs, rhs), (rhs, lhs)):
+        if atom_side == identity_elem and other[0] == "bin" and other[1] == op:
+            l, r = other[2], other[3]
+            if r == (inv_op, l) or l == (inv_op, r):
+                return True
+    return False
+
+
+def _property_check_commutative(lhs, rhs, op) -> bool:
+    if lhs[0] == "bin" and rhs[0] == "bin" and lhs[1] == op and rhs[1] == op:
+        l1, r1 = lhs[2], lhs[3]
+        l2, r2 = rhs[2], rhs[3]
+        if l1[0] != "bin" and r1[0] != "bin" and l2[0] != "bin" and r2[0] != "bin":
+            if l1 == r2 and r1 == l2:
+                return True
+    return False
+
+
+def _property_flatten(n, op) -> list:
+    if n[0] == "bin" and n[1] == op:
+        return _property_flatten(n[2], op) + _property_flatten(n[3], op)
+    return [n]
+
+
+def _property_check_associative(lhs, rhs, op) -> bool:
+    if lhs[0] == "bin" and rhs[0] == "bin" and lhs[1] == op and rhs[1] == op:
+        nested = any(
+            side[0] == "bin" and side[1] == op
+            for side in (lhs[2], lhs[3], rhs[2], rhs[3])
+        )
+        if nested and lhs != rhs:
+            return _property_flatten(lhs, op) == _property_flatten(rhs, op)
+    return False
+
+
+def _property_classify(lhs, rhs):
+    op = lhs[1] if lhs[0] == "bin" else (rhs[1] if rhs[0] == "bin" else None)
+    if op is None:
+        raise VerificationError("properties: no operator found in equation")
+    matches = []
+    if _property_check_identity(lhs, rhs, op):
+        matches.append("identity")
+    if _property_check_inverse(lhs, rhs, op):
+        matches.append("inverse")
+    if _property_check_commutative(lhs, rhs, op):
+        matches.append("commutative")
+    if _property_check_associative(lhs, rhs, op):
+        matches.append("associative")
+    if len(matches) != 1:
+        raise VerificationError(
+            f"properties: equation classifies as {matches} (expected exactly one match)"
+        )
+    return matches[0], op
+
+
+def _v_property(p: Problem) -> None:
+    m = re.search(r"\$(.*?)\$", p.question_latex, re.S)
+    if not m:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no equation found in {p.question_latex!r}")
+    eq = m.group(1)
+    if "=" not in eq:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no '=' in equation {eq!r}")
+    lhs_text, rhs_text = eq.split("=", 1)
+    lhs = _property_parse_side(lhs_text)
+    rhs = _property_parse_side(rhs_text)
+
+    prop, op = _property_classify(lhs, rhs)
+    op_name = _OP_NAME[op]
+    derived_label = f"{_PROP_NAME[prop]} Property of {op_name}"
+
+    mp = re.search(r"\\begin\{minipage\}.*?\n(.*?)\\end\{minipage\}", p.question_latex, re.S)
+    if not mp:
+        raise VerificationError(f"{p.topic}/{p.subskill}: no choice block found")
+    raw_lines = [ln.strip() for ln in re.split(r"\\\\", mp.group(1)) if ln.strip()]
+    choices = {}
+    for ln in raw_lines:
+        cm = re.match(r"([A-D])\)\s*(.+)$", ln)
+        if not cm:
+            raise VerificationError(f"{p.topic}/{p.subskill}: unparsable choice line {ln!r}")
+        choices[cm.group(1)] = cm.group(2).strip()
+    if len(choices) != 4:
+        raise VerificationError(f"{p.topic}/{p.subskill}: expected 4 choices, got {choices}")
+
+    labels = list(choices.values())
+    if len(set(labels)) != 4:
+        raise VerificationError(f"{p.topic}/{p.subskill}: duplicate choices {labels}")
+
+    matching_letters = [ltr for ltr, lbl in choices.items() if lbl == derived_label]
+    if len(matching_letters) != 1:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: derived property {derived_label!r} not found exactly "
+            f"once among printed choices {labels}"
+        )
+    correct_letter = matching_letters[0]
+
+    am = re.match(r"([A-D])\)\s*(.+)$", p.answer_latex.strip())
+    if not am:
+        raise VerificationError(f"{p.topic}/{p.subskill}: unparsable answer_latex {p.answer_latex!r}")
+    if am.group(1) != correct_letter or am.group(2).strip() != derived_label:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: printed answer {p.answer_latex!r} does not point at the "
+            f"derived property {correct_letter}) {derived_label}"
+        )
+
+    expected_others = {
+        f"{_PROP_NAME[pr]} Property of {op_name}" for pr in ("commutative", "associative", "identity", "inverse")
+        if pr != prop
+    }
+    other_labels = {lbl for ltr, lbl in choices.items() if ltr != correct_letter}
+    if other_labels != expected_others:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: distractor choices {other_labels} are not the other "
+            f"three {op_name} properties {expected_others}"
+        )
+
+    expected_answer_expr = f"{prop}_{_OP_KEY[op]}"
+    if p.answer_expr != expected_answer_expr:
+        raise VerificationError(
+            f"{p.topic}/{p.subskill}: answer_expr {p.answer_expr!r} does not match derived "
+            f"property {expected_answer_expr!r}"
+        )

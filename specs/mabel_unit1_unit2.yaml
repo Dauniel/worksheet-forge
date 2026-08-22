@@ -1,0 +1,46 @@
+title: Algebra 1 - Units 1 & 2 Practice
+header: Algebra 1 Units 1-2
+sections:
+- name: 'Part A: Numeric Expressions'
+  directions: Evaluate each expression without the use of a calculator.
+  workspace: 1.1cm
+  columns: 2
+  problems:
+  - {topic: negatives, subskill: add_sub_integers, count: 8, difficulty: easy}
+  - {topic: negatives, subskill: mul_div_integers, count: 8, difficulty: easy}
+  - {topic: negatives, subskill: order_of_operations, count: 14, difficulty: medium}
+  - {topic: negatives, subskill: order_of_operations, count: 8, difficulty: hard}
+- name: 'Part B: Evaluating Expressions'
+  directions: Evaluate each using the values given.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - {topic: functions, subskill: substitution, count: 12, difficulty: medium}
+- name: 'Part C: Simplifying Expressions'
+  directions: Simplify each expression.
+  workspace: 1.1cm
+  columns: 2
+  problems:
+  - {topic: like_terms, subskill: combine_like_terms, count: 12, difficulty: easy}
+  - {topic: like_terms, subskill: combine_like_terms, count: 13, difficulty: medium}
+  - {topic: like_terms, subskill: polynomial_like_terms, count: 13, difficulty: medium}
+  - {topic: like_terms, subskill: polynomial_like_terms, count: 12, difficulty: hard}
+- name: 'Part D: Properties of Addition and Multiplication'
+  directions: Select the property that is displayed in the given equation.
+  workspace: 0.3cm
+  columns: 1
+  problems:
+  - {topic: properties, subskill: commutative, count: 6, difficulty: medium}
+  - {topic: properties, subskill: associative, count: 6, difficulty: medium}
+  - {topic: properties, subskill: identity, count: 6, difficulty: medium}
+  - {topic: properties, subskill: inverse, count: 6, difficulty: medium}
+  - {topic: properties, subskill: mixed, count: 6, difficulty: medium}
+- name: 'Part E: Solving Equations'
+  directions: Solve each equation.
+  workspace: 1.4cm
+  columns: 2
+  problems:
+  - {topic: linear_equations, subskill: one_step, count: 12, difficulty: easy}
+  - {topic: linear_equations, subskill: two_step, count: 14, difficulty: easy}
+  - {topic: linear_equations, subskill: combine_then_solve, count: 12, difficulty: easy}
+  - {topic: linear_equations, subskill: with_distribution, count: 12, difficulty: easy}

@@ -18,6 +18,15 @@ Y = sp.Symbol("y")
 
 RANGES = {"easy": (1, 9), "medium": (2, 12), "hard": (2, 20)}
 
+# How often ``combine_like_terms`` uses a second variable (``3x + 2y + 5 + x +
+# 4y``) rather than one variable and constants. Easy stays single-variable so
+# the first exposure is only about collecting one kind of term; from medium on,
+# a second variable is the point of the exercise -- a student who can only
+# collect x-terms has not learned the skill. Gating this behind "hard" *and* a
+# coin flip (as this once did) meant a medium section never showed two
+# variables at all, and a hard one showed them barely half the time.
+TWO_VAR_CHANCE = {"easy": 0.0, "medium": 0.45, "hard": 0.75}
+
 
 def _c(rng: random.Random, difficulty: str) -> int:
     lo, hi = RANGES[difficulty]
@@ -40,7 +49,7 @@ def _mk(question: str, expr, subskill: str, difficulty: str) -> Problem:
 @register("like_terms", "combine_like_terms")
 def combine_like_terms(rng: random.Random, difficulty: str) -> Problem:
     a, b, c, d = (_c(rng, difficulty) for _ in range(4))
-    if difficulty == "hard" and rng.random() < 0.5:
+    if rng.random() < TWO_VAR_CHANCE[difficulty]:
         e = _c(rng, difficulty)
         question = terms(coeff(a, "x"), coeff(b, "y"), str(c), coeff(d, "x"), coeff(e, "y"))
         expr = a * X + b * Y + c + d * X + e * Y
