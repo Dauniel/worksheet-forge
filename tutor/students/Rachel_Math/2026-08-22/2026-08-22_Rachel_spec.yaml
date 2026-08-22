@@ -1,0 +1,133 @@
+title: Algebra 1 Units 1.1-2.4 Practice
+header: Algebra 1 Units 1.1-2.4 Practice
+sections:
+- name: 'Part A: Numerical Expressions and Order of Operations'
+  directions: Evaluate each expression completely. Show each major order-of-operations step.
+  workspace: 1.1cm
+  columns: 2
+  problems:
+  - topic: negatives
+    subskill: mixed_operations
+    count: 4
+    difficulty: easy
+  - topic: negatives
+    subskill: order_of_operations
+    count: 6
+    difficulty: medium
+- name: 'Part B: Properties of Addition and Multiplication'
+  directions: Select the property that is displayed in the given equation.
+  workspace: 0.3cm
+  columns: 1
+  problems:
+  - topic: properties
+    subskill: commutative
+    count: 2
+    difficulty: easy
+  - topic: properties
+    subskill: associative
+    count: 2
+    difficulty: easy
+  - topic: properties
+    subskill: identity
+    count: 2
+    difficulty: medium
+  - topic: properties
+    subskill: inverse
+    count: 2
+    difficulty: medium
+  - topic: properties
+    subskill: mixed
+    count: 2
+    difficulty: hard
+- name: 'Part C: Evaluating Expressions by Substitution'
+  directions: Substitute the given value or values and evaluate completely.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: functions
+    subskill: substitution
+    count: 5
+    difficulty: medium
+  - topic: functions
+    subskill: evaluate_function
+    count: 5
+    difficulty: medium
+- name: 'Part D: Distributing and Combining Like Terms'
+  directions: Rewrite each expression in simplest terms. Show the distribution step.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: like_terms
+    subskill: combine_like_terms
+    count: 4
+    difficulty: easy
+  - topic: like_terms
+    subskill: polynomial_like_terms
+    count: 3
+    difficulty: medium
+  - topic: like_terms
+    subskill: distribute_and_combine
+    count: 7
+    difficulty: medium
+- name: 'Part E: Absolute Value'
+  directions: Evaluate each expression. Work inside the absolute value bars first.
+  workspace: 1.2cm
+  columns: 2
+  problems:
+  - topic: absolute_value
+    subskill: evaluate
+    count: 10
+    difficulty: medium
+- name: 'Part F: Fraction Arithmetic'
+  directions: Evaluate. Write every answer in lowest terms.
+  workspace: 1.4cm
+  columns: 2
+  problems:
+  - topic: fractions
+    subskill: add_sub_fractions
+    count: 3
+    difficulty: medium
+  - topic: fractions
+    subskill: mul_div_fractions
+    count: 3
+    difficulty: medium
+  - topic: fractions
+    subskill: simplify_fractions
+    count: 2
+    difficulty: easy
+- name: 'Part G: One- and Two-Step Equations'
+  directions: Solve for the variable and simplify your answer.
+  workspace: 1.6cm
+  columns: 2
+  problems:
+  - topic: linear_equations
+    subskill: one_step
+    count: 5
+    difficulty: easy
+  - topic: linear_equations
+    subskill: two_step
+    count: 7
+    difficulty: medium
+- name: 'Part H: Multi-Step Equations with Distribution'
+  directions: Distribute first, then solve for the variable.
+  workspace: 1.8cm
+  columns: 2
+  problems:
+  - topic: linear_equations
+    subskill: with_distribution
+    count: 10
+    difficulty: medium
+- name: 'Part I: Variables on Both Sides'
+  directions: Solve for the variable. Clear fractions first where it helps.
+  workspace: 2.0cm
+  columns: 2
+  problems:
+  - topic: linear_equations
+    subskill: multi_step_both_sides
+    count: 10
+    difficulty: medium
+  - topic: linear_equations
+    subskill: fractional
+    count: 6
+    difficulty: hard
+seed: 4407
