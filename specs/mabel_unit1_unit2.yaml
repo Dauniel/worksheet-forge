@@ -21,8 +21,10 @@ sections:
   workspace: 1.1cm
   columns: 2
   problems:
-  - {topic: like_terms, subskill: combine_like_terms, count: 12, difficulty: easy}
-  - {topic: like_terms, subskill: combine_like_terms, count: 13, difficulty: medium}
+  - {topic: like_terms, subskill: combine_like_terms, count: 6, difficulty: easy}
+  - {topic: like_terms, subskill: combine_like_terms_two_var, count: 6, difficulty: medium}
+  - {topic: like_terms, subskill: combine_like_terms, count: 8, difficulty: medium}
+  - {topic: like_terms, subskill: combine_like_terms_two_var, count: 5, difficulty: hard}
   - {topic: like_terms, subskill: polynomial_like_terms, count: 13, difficulty: medium}
   - {topic: like_terms, subskill: polynomial_like_terms, count: 12, difficulty: hard}
 - name: 'Part D: Properties of Addition and Multiplication'
@@ -40,7 +42,12 @@ sections:
   workspace: 1.4cm
   columns: 2
   problems:
-  - {topic: linear_equations, subskill: one_step, count: 12, difficulty: easy}
-  - {topic: linear_equations, subskill: two_step, count: 14, difficulty: easy}
-  - {topic: linear_equations, subskill: combine_then_solve, count: 12, difficulty: easy}
-  - {topic: linear_equations, subskill: with_distribution, count: 12, difficulty: easy}
+  - {topic: linear_equations, subskill: one_step, count: 10, difficulty: easy}
+  - {topic: linear_equations, subskill: two_step, count: 4, difficulty: easy}
+  - {topic: linear_equations, subskill: two_step, count: 6, difficulty: medium}
+  - {topic: linear_equations, subskill: combine_then_solve, count: 4, difficulty: easy}
+  - {topic: linear_equations, subskill: combine_then_solve, count: 6, difficulty: medium}
+  - {topic: linear_equations, subskill: with_distribution, count: 4, difficulty: easy}
+  - {topic: linear_equations, subskill: with_distribution, count: 6, difficulty: medium}
+  - {topic: linear_equations, subskill: fractional, count: 5, difficulty: easy}
+  - {topic: linear_equations, subskill: proportion, count: 5, difficulty: easy}

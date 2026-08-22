@@ -91,6 +91,7 @@ CATALOG: Dict[str, dict] = {
         "workspace": "1.3cm",
         "progression": [
             _s("combine_like_terms", "easy", columns=2),
+            _s("combine_like_terms_two_var", "medium", columns=2),
             _s("polynomial_like_terms", "medium",
                group="Combining Polynomial Like Terms",
                directions="Combine like terms. Do not change the exponents.", columns=2),

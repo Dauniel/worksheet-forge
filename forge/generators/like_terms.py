@@ -33,6 +33,29 @@ def _c(rng: random.Random, difficulty: str) -> int:
     return nonzero_int(rng, -hi, hi) if rng.random() < 0.5 else rng.randint(lo, hi)
 
 
+def _distinct(rng: random.Random, difficulty: str, n: int) -> list[int]:
+    """Sample ``n`` coefficients that are all different from one another.
+
+    Independent draws collide often at these ranges -- roughly 45% of
+    four-term problems repeated a number, producing eyesores like
+    ``5x + 1 + 5x + 1`` and ``2x^2 + 3x + 12x^2 + 3x``. A repeat also makes the
+    problem easier than intended: the student can pattern-match the duplicate
+    instead of reading each term. The retry budget is generous but finite --
+    even "easy" offers 18 usable values for at most 6 slots, so exhaustion is
+    not reachable in practice; the fallback exists so a future range change
+    cannot hang the build.
+    """
+    vals: list[int] = []
+    for _ in range(n):
+        v = _c(rng, difficulty)
+        for _attempt in range(50):
+            if v not in vals:
+                break
+            v = _c(rng, difficulty)
+        vals.append(v)
+    return vals
+
+
 def _mk(question: str, expr, subskill: str, difficulty: str) -> Problem:
     expr = sp.expand(expr)
     return Problem(
@@ -46,27 +69,52 @@ def _mk(question: str, expr, subskill: str, difficulty: str) -> Problem:
     )
 
 
+def _one_var(rng: random.Random, difficulty: str, subskill: str) -> Problem:
+    a, b, c, d = _distinct(rng, difficulty, 4)
+    question = terms(coeff(a, "x"), str(b), coeff(c, "x"), str(d))
+    return _mk(question, a * X + b + c * X + d, subskill, difficulty)
+
+
+def _two_var(rng: random.Random, difficulty: str, subskill: str) -> Problem:
+    a, b, c, d, e = _distinct(rng, difficulty, 5)
+    question = terms(coeff(a, "x"), coeff(b, "y"), str(c), coeff(d, "x"), coeff(e, "y"))
+    return _mk(question, a * X + b * Y + c + d * X + e * Y, subskill, difficulty)
+
+
 @register("like_terms", "combine_like_terms")
 def combine_like_terms(rng: random.Random, difficulty: str) -> Problem:
-    a, b, c, d = (_c(rng, difficulty) for _ in range(4))
     if rng.random() < TWO_VAR_CHANCE[difficulty]:
-        e = _c(rng, difficulty)
-        question = terms(coeff(a, "x"), coeff(b, "y"), str(c), coeff(d, "x"), coeff(e, "y"))
-        expr = a * X + b * Y + c + d * X + e * Y
-    else:
-        question = terms(coeff(a, "x"), str(b), coeff(c, "x"), str(d))
-        expr = a * X + b + c * X + d
-    return _mk(question, expr, "combine_like_terms", difficulty)
+        return _two_var(rng, difficulty, "combine_like_terms")
+    return _one_var(rng, difficulty, "combine_like_terms")
+
+
+@register("like_terms", "combine_like_terms_two_var")
+def combine_like_terms_two_var(rng: random.Random, difficulty: str) -> Problem:
+    """Always two variables, so a spec can ask for an exact number of them.
+
+    ``combine_like_terms`` decides per problem with a coin flip, which is fine
+    across a whole textbook but not across the ten or twenty problems in one
+    worksheet section: at TWO_VAR_CHANCE["medium"] a ten-problem block came out
+    2/10 two-variable on one real build. Difficulty here means what it means
+    everywhere else -- coefficient magnitude -- and no longer doubles as a
+    hidden control over which variables appear.
+    """
+    return _two_var(rng, difficulty, "combine_like_terms_two_var")
 
 @register("like_terms", "polynomial_like_terms")
 def polynomial_like_terms(rng: random.Random, difficulty: str) -> Problem:
     """Combine repeated powers while keeping each exponent unchanged."""
     degrees = (2,) if difficulty == "easy" else ((2, 1) if difficulty == "medium" else (3, 2, 1))
     rendered, expr = [], sp.Integer(0)
-    for degree in degrees:
-        a, b = _c(rng, difficulty), _c(rng, difficulty)
-        while a + b == 0:
+    # Distinct across the whole expression, not just within one degree, so
+    # `2x^2 + 3x + 12x^2 + 3x` cannot happen.
+    pool = _distinct(rng, difficulty, 2 * len(degrees))
+    for index, degree in enumerate(degrees):
+        a, b = pool[2 * index], pool[2 * index + 1]
+        while a + b == 0 or pool.count(b) > 1:
+            # Resampling for the a + b == 0 guard must not undo distinctness.
             b = _c(rng, difficulty)
+            pool[2 * index + 1] = b
         variable = "x" if degree == 1 else rf"x^{{{degree}}}"
         rendered.extend((coeff(a, variable), coeff(b, variable)))
         expr += (a + b) * X**degree

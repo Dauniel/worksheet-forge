@@ -7,6 +7,7 @@ infinite-solution cases structurally impossible, and keeps the answer clean.
 from __future__ import annotations
 
 import random
+import math
 from fractions import Fraction
 
 import sympy as sp
@@ -168,13 +169,22 @@ def proportion(rng: random.Random, difficulty: str) -> Problem:
         rhs = rf"\dfrac{{{p}}}{{{q}}}"
     elif style == 1:
         # p / x = a / q  (x sits in a denominator)
+        # p / x = a / q, built backwards so the solution is always an exact
+        # integer. Cross-multiplying gives p*q = a*x, so a must divide p*q.
+        # Choosing gcd(a, q) == 1 (which also stops the right side printing
+        # unreduced, as 2/6 did) forces q | x, so write x = q*t and p = a*t.
         q = pick(rng, (2, 3, 4, 5, 6))
-        # Same trap on this side: a divisible by q prints 4/2 or 6/6.
         a = nonzero_int(rng, 1, min(hi, 9))
-        while a % q == 0:
+        while math.gcd(a, q) != 1:
             a = nonzero_int(rng, 1, min(hi, 9))
-        p = nonzero_int(rng, -min(hi, 9), min(hi, 9))
-        x_sol = Fraction(p * q, a)
+        # |t| == 1 makes the numerators equal, collapsing the problem to
+        # "read off the denominator" (2/x = 2/6 -> x = 6) with no
+        # cross-multiplication at all.
+        t = nonzero_int(rng, -min(hi, 9), min(hi, 9))
+        while abs(t) < 2:
+            t = nonzero_int(rng, -min(hi, 9), min(hi, 9))
+        p = a * t
+        x_sol = Fraction(q * t)
         lhs = rf"\dfrac{{{p}}}{{x}}"
         rhs = rf"\dfrac{{{a}}}{{{q}}}"
     else:
