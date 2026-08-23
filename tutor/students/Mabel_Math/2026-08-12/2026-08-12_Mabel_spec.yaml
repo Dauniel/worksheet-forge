@@ -1,0 +1,124 @@
+title: Math Review Worksheet
+header: Math Review
+seed: 812
+sections:
+- name: 'Part A: Negative Number Operations'
+  directions: Evaluate each expression completely.
+  workspace: 1.1cm
+  columns: 2
+  problems:
+  - topic: negatives
+    subskill: add_sub_integers
+    count: 4
+    difficulty: medium
+  - topic: negatives
+    subskill: mul_div_integers
+    count: 3
+    difficulty: medium
+  - topic: negatives
+    subskill: mixed_operations
+    count: 3
+    difficulty: medium
+- name: 'Part B: Order of Operations'
+  directions: Evaluate each expression completely. Show each major step.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: negatives
+    subskill: order_of_operations
+    count: 10
+    difficulty: medium
+- name: 'Part C: Square and Cube Roots'
+  directions: Evaluate each root.
+  workspace: 1.1cm
+  columns: 2
+  problems:
+  - topic: roots
+    subskill: square_root
+    count: 6
+    difficulty: medium
+  - topic: roots
+    subskill: cube_root
+    count: 4
+    difficulty: medium
+- name: 'Part D: Simplifying Radicals'
+  directions: Simplify each radical completely.
+  workspace: 1.1cm
+  columns: 2
+  problems:
+  - topic: roots
+    subskill: simplify_radical
+    count: 5
+    difficulty: medium
+  - topic: roots
+    subskill: simplify_cube_radical
+    count: 5
+    difficulty: medium
+- name: 'Part E: Exponent Properties'
+  directions: Simplify. Exponent rules apply to multiplication, division, and powers---not addition.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: exponents
+    subskill: product_rule
+    count: 3
+    difficulty: medium
+  - topic: exponents
+    subskill: quotient_rule
+    count: 3
+    difficulty: medium
+  - topic: exponents
+    subskill: power_rule
+    count: 4
+    difficulty: medium
+- name: 'Part F: Greatest Common Factor'
+  directions: Find the greatest common factor.
+  workspace: 1.1cm
+  columns: 2
+  problems:
+  - topic: gcf
+    subskill: numerical
+    count: 5
+    difficulty: medium
+  - topic: gcf
+    subskill: monomial
+    count: 5
+    difficulty: medium
+- name: 'Part G: Combining Like Terms'
+  directions: Combine like terms. Do not add or multiply the exponents.
+  workspace: 1.3cm
+  columns: 2
+  problems:
+  - topic: like_terms
+    subskill: combine_like_terms
+    count: 5
+    difficulty: medium
+  - topic: like_terms
+    subskill: polynomial_like_terms
+    count: 5
+    difficulty: medium
+- name: 'Part H: Solving Linear Equations'
+  directions: Solve each equation for $x$. Show your steps.
+  workspace: 2.0cm
+  columns: 2
+  problems:
+  - topic: linear_equations
+    subskill: two_step
+    count: 2
+    difficulty: medium
+  - topic: linear_equations
+    subskill: with_distribution
+    count: 2
+    difficulty: medium
+  - topic: linear_equations
+    subskill: multi_step_both_sides
+    count: 2
+    difficulty: medium
+  - topic: linear_equations
+    subskill: multi_step_both_sides
+    count: 2
+    difficulty: hard
+  - topic: linear_equations
+    subskill: fractional
+    count: 2
+    difficulty: hard
